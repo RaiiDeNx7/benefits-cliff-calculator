@@ -1,0 +1,606 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Benefits Cliff Calculator</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header class="page-header">
+      <h1>Benefits Cliff Calculator</h1>
+      <p class="lede">Enter household information. Totals update as you type.</p>
+    </header>
+
+    <main class="layout">
+      <form id="calculator-form" class="form-card" novalidate>
+        <fieldset class="section">
+          <legend>1. Locality</legend>
+          <label for="locality">Virginia locality</label>
+          <select id="locality" name="locality" required>
+            <option value="">Select locality…</option>
+          </select>
+        </fieldset>
+
+        <fieldset class="section">
+          <legend>2. Benefits programs</legend>
+          <p class="hint">Select all that apply.</p>
+          <div id="benefits-checkboxes" class="checkbox-grid"></div>
+
+          <div id="hcv-panel" class="conditional-panel is-hidden" hidden>
+            <label for="hcv-bedrooms">Number of bedrooms in the unit</label>
+            <select id="hcv-bedrooms" name="hcv_bedrooms" aria-required="true">
+              <option value="">Select…</option>
+              <option value="1">1</option>
+              <option value="2">2</option>
+              <option value="3">3</option>
+              <option value="4">4</option>
+              <option value="5">5</option>
+            </select>
+            <p class="hint">
+              If unknown: use 1 bedroom for every 2 adults and 1 for every 2 dependents of the same
+              gender.
+            </p>
+          </div>
+        </fieldset>
+
+        <fieldset class="section">
+          <legend>3. Household size</legend>
+          <div class="field-row">
+            <div class="field">
+              <label for="num-adults">Number of adults in household</label>
+              <input
+                type="number"
+                id="num-adults"
+                name="num_adults"
+                min="0"
+                max="20"
+                step="1"
+                value="0"
+                required
+              />
+            </div>
+            <div class="field">
+              <label for="num-children">Number of children (18 years or less)</label>
+              <input
+                type="number"
+                id="num-children"
+                name="num_children"
+                min="0"
+                max="20"
+                step="1"
+                value="0"
+                required
+              />
+            </div>
+            <div class="field">
+              <label for="total-people">Total number of people</label>
+              <input
+                type="number"
+                id="total-people"
+                name="total_people"
+                readonly
+                aria-readonly="true"
+                tabindex="-1"
+              />
+            </div>
+          </div>
+        </fieldset>
+
+        <fieldset class="section">
+          <legend>Adults (one row per adult)</legend>
+          <div id="adult-rows" class="dynamic-rows"></div>
+        </fieldset>
+
+        <fieldset class="section">
+          <legend>Children (one row per child)</legend>
+          <div id="child-rows" class="dynamic-rows"></div>
+        </fieldset>
+
+        <fieldset class="section">
+          <legend>Disability</legend>
+          <div class="field">
+            <span class="label-like" id="adults-disabled-label">Are any adults disabled?</span>
+            <div class="radio-row" role="group" aria-labelledby="adults-disabled-label">
+              <label><input type="radio" name="adults_disabled" value="yes" /> Yes</label>
+              <label><input type="radio" name="adults_disabled" value="no" checked /> No</label>
+            </div>
+          </div>
+
+          <div id="adult-disability-panel" class="conditional-panel is-hidden" hidden>
+            <div class="field">
+              <label for="disabled-adult-head-spouse"
+                >How many disabled adults are the family head or spouse?</label
+              >
+              <input
+                type="number"
+                id="disabled-adult-head-spouse"
+                name="disabled_adult_head_spouse"
+                min="0"
+                max="20"
+                step="1"
+                value="0"
+              />
+            </div>
+            <div class="field">
+              <label for="disabled-adult-non-elderly-not-head"
+                >How many non-elderly (under 61 years) adults are disabled who are NOT the family head
+                or spouse?</label
+              >
+              <input
+                type="number"
+                id="disabled-adult-non-elderly-not-head"
+                name="disabled_adult_non_elderly_not_head"
+                min="0"
+                max="20"
+                step="1"
+                value="0"
+              />
+            </div>
+            <div class="field">
+              <label for="disabled-adult-elderly"
+                >How many are disabled and elderly (62 years or older)?</label
+              >
+              <input
+                type="number"
+                id="disabled-adult-elderly"
+                name="disabled_adult_elderly"
+                min="0"
+                max="20"
+                step="1"
+                value="0"
+              />
+            </div>
+          </div>
+
+          <div class="field">
+            <span class="label-like" id="children-disabled-label">Are any children disabled?</span>
+            <div class="radio-row" role="group" aria-labelledby="children-disabled-label">
+              <label><input type="radio" name="children_disabled" value="yes" /> Yes</label>
+              <label><input type="radio" name="children_disabled" value="no" checked /> No</label>
+            </div>
+          </div>
+
+          <div id="child-disability-panel" class="conditional-panel is-hidden" hidden>
+            <div class="field">
+              <label for="disabled-children-count">How many children disabled?</label>
+              <input
+                type="number"
+                id="disabled-children-count"
+                name="disabled_children_count"
+                min="0"
+                max="20"
+                step="1"
+                value="0"
+              />
+            </div>
+            <div class="field">
+              <span class="label-like" id="child-ssi-income-label">Is there SSI income (child)?</span>
+              <div class="radio-row" role="group" aria-labelledby="child-ssi-income-label">
+                <label><input type="radio" name="child_ssi_income" value="yes" /> Yes</label>
+                <label><input type="radio" name="child_ssi_income" value="no" checked /> No</label>
+              </div>
+            </div>
+            <div id="child-ssi-panel" class="conditional-panel is-hidden" hidden>
+              <div class="field">
+                <label for="child-ssi-recipients">How many children receive SSI/SSDI?</label>
+                <input
+                  type="number"
+                  id="child-ssi-recipients"
+                  name="child_ssi_recipients"
+                  min="0"
+                  max="20"
+                  step="1"
+                  value="0"
+                />
+              </div>
+              <div class="field">
+                <label for="child-ssi-total-monthly">Total child SSI/SSDI (monthly $)</label>
+                <input
+                  type="number"
+                  id="child-ssi-total-monthly"
+                  name="child_ssi_total_monthly"
+                  min="0"
+                  step="0.01"
+                  inputmode="decimal"
+                  placeholder="0"
+                />
+              </div>
+            </div>
+          </div>
+        </fieldset>
+
+        <fieldset class="section">
+          <legend>Shelter and utilities</legend>
+          <div class="field">
+            <label for="shelter-expenses">Qualified shelter expenses (monthly)</label>
+            <input
+              type="number"
+              id="shelter-expenses"
+              name="shelter_expenses"
+              min="0"
+              step="0.01"
+              inputmode="decimal"
+              placeholder="0"
+            />
+            <p class="hint">
+              Rent, mortgage, loan payments, or other continuing charges toward ownership of shelter.
+            </p>
+          </div>
+          <div class="field">
+            <span class="label-like" id="utility-method-label">Utility costs</span>
+            <div class="radio-row" role="group" aria-labelledby="utility-method-label">
+              <label>
+                <input type="radio" name="utility_method" value="actual" checked /> Actual monthly
+                utility costs
+              </label>
+              <label>
+                <input type="radio" name="utility_method" value="sua" /> Standard Utility Allowance
+                (SUA)
+              </label>
+            </div>
+          </div>
+          <div class="field">
+            <label for="utility-expenses">Monthly utility expenses</label>
+            <input
+              type="number"
+              id="utility-expenses"
+              name="utility_expenses"
+              min="0"
+              step="0.01"
+              inputmode="decimal"
+              placeholder="0"
+            />
+            <p class="hint" id="utility-expenses-hint">
+              Enter your actual monthly total when using actual costs; SUA uses a standard amount in
+              benefit rules (this field may be unused when SUA applies).
+            </p>
+          </div>
+        </fieldset>
+
+        <fieldset class="section">
+          <legend>Tax filing status</legend>
+          <p class="hint">Must be selected for EITC calculations.</p>
+          <div class="radio-stack" role="radiogroup" aria-label="Tax filing status">
+            <label>
+              <input type="radio" name="tax_filing_status" value="mfj" /> Married filing jointly
+            </label>
+            <label>
+              <input type="radio" name="tax_filing_status" value="single_hoh" /> Single, head of
+              household, qualifying surviving spouse
+            </label>
+          </div>
+          <p id="eitc-tax-warning" class="warning is-hidden" role="status" aria-live="polite"></p>
+        </fieldset>
+
+        <fieldset class="section">
+          <legend>Income — adults who are parents of the children listed (combined totals)</legend>
+          <p class="hint">
+            Do not count income of the elderly, disabled adult, or spouse when excluded by program
+            rules.
+          </p>
+          <div class="field-row">
+            <div class="field">
+              <label for="parent-yes-current">Current all-adult monthly earned income ($)</label>
+              <input
+                type="number"
+                id="parent-yes-current"
+                name="parent_yes_current"
+                min="0"
+                step="0.01"
+                inputmode="decimal"
+                placeholder="0"
+              />
+            </div>
+            <div class="field">
+              <label for="parent-yes-new">New all-adult monthly earned income ($)</label>
+              <input
+                type="number"
+                id="parent-yes-new"
+                name="parent_yes_new"
+                min="0"
+                step="0.01"
+                inputmode="decimal"
+                placeholder="0"
+              />
+            </div>
+          </div>
+          <div class="field">
+            <span class="label-like" id="parent-yes-ss-label"
+              >Is there Social Security income (income of adult(s) who answered &ldquo;Yes&rdquo; to
+              being a parent to the children)?</span
+            >
+            <div class="radio-row" role="group" aria-labelledby="parent-yes-ss-label">
+              <label><input type="radio" name="parent_yes_ss" value="yes" /> Yes</label>
+              <label><input type="radio" name="parent_yes_ss" value="no" checked /> No</label>
+            </div>
+          </div>
+          <div id="parent-yes-ss-panel" class="conditional-panel is-hidden" hidden>
+            <div class="field">
+              <label for="parent-yes-ss-amount"
+                >What is the Social Security income of adult(s) who answered &ldquo;Yes&rdquo; to
+                being a parent to the children? (monthly $)</label
+              >
+              <input
+                type="number"
+                id="parent-yes-ss-amount"
+                name="parent_yes_ss_amount"
+                min="0"
+                step="0.01"
+                inputmode="decimal"
+                placeholder="0"
+              />
+            </div>
+          </div>
+        </fieldset>
+
+        <fieldset class="section">
+          <legend>Income — adults who are not parents of the children listed (combined totals)</legend>
+          <p class="hint">
+            Do not count income of the elderly, disabled adult, or spouse when excluded by program
+            rules.
+          </p>
+          <div class="field-row">
+            <div class="field">
+              <label for="parent-no-current">Current all-adult monthly earned income ($)</label>
+              <input
+                type="number"
+                id="parent-no-current"
+                name="parent_no_current"
+                min="0"
+                step="0.01"
+                inputmode="decimal"
+                placeholder="0"
+              />
+            </div>
+            <div class="field">
+              <label for="parent-no-new">New all-adult monthly earned income ($)</label>
+              <input
+                type="number"
+                id="parent-no-new"
+                name="parent_no_new"
+                min="0"
+                step="0.01"
+                inputmode="decimal"
+                placeholder="0"
+              />
+            </div>
+          </div>
+          <div class="field">
+            <span class="label-like" id="parent-no-ss-label"
+              >Is there Social Security income (income of adult(s) who answered &ldquo;No&rdquo; to
+              being a parent to the children)?</span
+            >
+            <div class="radio-row" role="group" aria-labelledby="parent-no-ss-label">
+              <label><input type="radio" name="parent_no_ss" value="yes" /> Yes</label>
+              <label><input type="radio" name="parent_no_ss" value="no" checked /> No</label>
+            </div>
+          </div>
+          <div id="parent-no-ss-panel" class="conditional-panel is-hidden" hidden>
+            <div class="field">
+              <label for="parent-no-ss-amount"
+                >What is the Social Security income of adult(s) who answered &ldquo;No&rdquo; to
+                being a parent to the children? (monthly $)</label
+              >
+              <input
+                type="number"
+                id="parent-no-ss-amount"
+                name="parent_no_ss_amount"
+                min="0"
+                step="0.01"
+                inputmode="decimal"
+                placeholder="0"
+              />
+            </div>
+          </div>
+        </fieldset>
+
+        <fieldset class="section">
+          <legend>Child care subsidy (Excel-linked inputs)</legend>
+          <p class="hint">
+            Matches <strong>Total income package</strong> cell <strong>D80</strong> and optional
+            <strong>TANF-VIEW</strong> amounts used on the Child care subsidy sheet (H column).
+          </p>
+          <div class="field">
+            <label for="child-care-monthly-ss">Monthly Social Security in child care income ($)</label>
+            <input
+              type="number"
+              id="child-care-monthly-ss"
+              name="child_care_monthly_ss"
+              min="0"
+              step="0.01"
+              inputmode="decimal"
+              placeholder="0"
+            />
+            <p class="hint">
+              Same as workbook D80. If either parent Social Security question above is Yes, enter
+              amounts in those follow-up fields; this total is used until a parent amount is entered.
+            </p>
+          </div>
+          <div class="field-row">
+            <div class="field">
+              <label for="cc-tanf-l">Optional: TANF-VIEW L benefit ($/mo)</label>
+              <input
+                type="number"
+                id="cc-tanf-l"
+                name="cc_tanf_l"
+                min="0"
+                step="0.01"
+                inputmode="decimal"
+                placeholder="0"
+              />
+              <p class="hint">e.g. L212 / L214 when TANF cash path applies; 0 if not receiving.</p>
+            </div>
+            <div class="field">
+              <label for="cc-tanf-t">Optional: TANF-VIEW T benefit ($/mo)</label>
+              <input
+                type="number"
+                id="cc-tanf-t"
+                name="cc_tanf_t"
+                min="0"
+                step="0.01"
+                inputmode="decimal"
+                placeholder="0"
+              />
+              <p class="hint">e.g. T212 / T214 when applicable; 0 if not receiving.</p>
+            </div>
+          </div>
+        </fieldset>
+
+        <section class="section outputs" aria-labelledby="outputs-heading">
+          <h2 id="outputs-heading">Outputs</h2>
+          <div class="output-grid output-grid--four output-grid--six output-grid--auto">
+            <div class="output-card">
+              <span class="output-label">Total household income</span>
+              <span class="output-value" id="output-total-current" aria-live="polite">$0</span>
+              <p class="output-note">
+                Sum of current monthly earned income (parents yes + parents no), each dollar amount
+                rounded up.
+              </p>
+            </div>
+            <div class="output-card">
+              <span class="output-label">New total household income</span>
+              <span class="output-value" id="output-total-new" aria-live="polite">$0</span>
+              <p class="output-note">
+                Sum of new monthly earned income (parents yes + parents no), each dollar amount
+                rounded up.
+              </p>
+            </div>
+            <div class="output-card">
+              <span class="output-label">Child care subsidy (current)</span>
+              <span class="output-value" id="output-cc-subsidy-current" aria-live="polite">—</span>
+              <p class="output-note">
+                Same logic as <strong>Child care subsidy</strong> sheet <strong>S208</strong> (monthly
+                $). Shown when Child Care Subsidy is selected.
+              </p>
+            </div>
+            <div class="output-card">
+              <span class="output-label">Child care subsidy (new income)</span>
+              <span class="output-value" id="output-cc-subsidy-new" aria-live="polite">—</span>
+              <p class="output-note">
+                Same logic as <strong>S210</strong>. Uses new monthly earned totals (B91 path).
+              </p>
+            </div>
+            <div class="output-card">
+              <span class="output-label">EITC + VA (current, monthly)</span>
+              <span class="output-value output-value--eitc" id="output-eitc-current" aria-live="polite">—</span>
+              <p class="output-note">
+                Same as <strong>EITC!E208/12</strong> (federal + 15% VA on rows 208–210). Shown when EITC
+                is selected.
+              </p>
+            </div>
+            <div class="output-card">
+              <span class="output-label">EITC + VA (new income, monthly)</span>
+              <span class="output-value output-value--eitc" id="output-eitc-new" aria-live="polite">—</span>
+              <p class="output-note">Same as <strong>EITC!E210/12</strong>.</p>
+            </div>
+            <div class="output-card">
+              <span class="output-label">Marketplace subsidy (current)</span>
+              <span class="output-value" id="output-marketplace-current" aria-live="polite">—</span>
+              <p class="output-note">
+                Same as <strong>Health insurance subsidy L220</strong> (monthly $). Shown when Marketplace
+                subsidies are selected. Uses adult ages (up to 8) and locality for SLCSP totals like the
+                workbook.
+              </p>
+            </div>
+            <div class="output-card">
+              <span class="output-label">Marketplace subsidy (new income)</span>
+              <span class="output-value" id="output-marketplace-new" aria-live="polite">—</span>
+              <p class="output-note">Same as <strong>L222</strong>.</p>
+            </div>
+            <div class="output-card">
+              <span class="output-label">Medicaid (current)</span>
+              <span class="output-value" id="output-medicaid-current" aria-live="polite">—</span>
+              <p class="output-note">
+                Same as <strong>Medicaid!N212</strong> (monthly $). Shown when Medicaid is selected.
+                Uses L212+M212: earned income minus work disregard vs J2/L2 limits and adult/child spend
+                rates (Program C148/C152).
+              </p>
+            </div>
+            <div class="output-card">
+              <span class="output-label">Medicaid (new income)</span>
+              <span class="output-value" id="output-medicaid-new" aria-live="polite">—</span>
+              <p class="output-note">Same as <strong>Medicaid!N214</strong> (L214+M214).</p>
+            </div>
+            <div class="output-card">
+              <span class="output-label">HCV program (current)</span>
+              <span class="output-value" id="output-hcv-current" aria-live="polite">—</span>
+              <p class="output-note">
+                Same as <strong>Housing Voucher!Q209</strong> (monthly $). Shown when Housing Choice
+                Voucher is selected. Uses locality, household size, adult ages, bedrooms, earned income,
+                optional TANF and Social Security fields.
+              </p>
+            </div>
+            <div class="output-card">
+              <span class="output-label">HCV program (new income)</span>
+              <span class="output-value" id="output-hcv-new" aria-live="polite">—</span>
+              <p class="output-note">Same as <strong>Housing Voucher!Q211</strong>.</p>
+            </div>
+            <div class="output-card">
+              <span class="output-label">TANF (current)</span>
+              <span class="output-value" id="output-tanf-max-current" aria-live="polite">—</span>
+              <p class="output-note">
+                Same as <strong>MAX('TANF-VIEW'!L212,'TANF-VIEW'!T212)</strong> (monthly $). Shown when
+                TANF is selected. Uses locality, earned income, and Social Security.
+              </p>
+            </div>
+            <div class="output-card">
+              <span class="output-label">TANF (new income)</span>
+              <span class="output-value" id="output-tanf-max-new" aria-live="polite">—</span>
+              <p class="output-note">
+                Same as <strong>MAX('TANF-VIEW'!L214,'TANF-VIEW'!T214)</strong>. Row 214 still uses
+                <strong>current</strong> packaged monthly earned on the TANF B column (workbook B90), same
+                as row 212.
+              </p>
+            </div>
+            <div class="output-card">
+              <span class="output-label">TANF/VIEW (current)</span>
+              <span class="output-value" id="output-tanf-view-t-current" aria-live="polite">—</span>
+              <p class="output-note">
+                Same as <strong>'TANF-VIEW'!T212</strong> (monthly $). Shown when TANF/VIEW is selected.
+              </p>
+            </div>
+            <div class="output-card">
+              <span class="output-label">TANF/VIEW (new income)</span>
+              <span class="output-value" id="output-tanf-view-t-new" aria-live="polite">—</span>
+              <p class="output-note">
+                Same as <strong>'TANF-VIEW'!T214</strong>. Row 214 uses current packaged earned (B90) on
+                the TANF B column, same as T212.
+              </p>
+            </div>
+            <div class="output-card">
+              <span class="output-label">WIC (current)</span>
+              <span class="output-value" id="output-wic-current" aria-live="polite">—</span>
+              <p class="output-note">
+                Same as <strong>WIC!F211</strong> (monthly $). Shown when WIC is selected. Counts
+                children in infant through preschool bands; income test includes earned income, Social
+                Security, and MAX(TANF-VIEW L,T).
+              </p>
+            </div>
+            <div class="output-card">
+              <span class="output-label">WIC (new income)</span>
+              <span class="output-value" id="output-wic-new" aria-live="polite">—</span>
+              <p class="output-note">Same as <strong>WIC!F213</strong>. Uses new monthly earned for B213.</p>
+            </div>
+          </div>
+        </section>
+      </form>
+    </main>
+
+        <script src="data.js"></script>
+        <script src="childCareLookupData.js"></script>
+        <script src="childCareSubsidy.js"></script>
+        <script src="eitcLookupData.js"></script>
+        <script src="eitc.js"></script>
+        <script src="marketplaceLookupData.js"></script>
+        <script src="marketplaceSubsidy.js"></script>
+        <script src="medicaidLookupData.js"></script>
+        <script src="medicaid.js"></script>
+        <script src="hcvLookupData.js"></script>
+        <script src="hcv.js"></script>
+        <script src="snapTanfWicLookupData.js"></script>
+        <script src="tanfView.js"></script>
+        <script src="wic.js"></script>
+        <script src="app.js"></script>
+  </body>
+</html>

@@ -1,0 +1,186 @@
+--- Main ---
+Inputs From Customer:
+
+1. Select Locality From Dropdown (in Data Validation)
+
+2. Select Benefits Programs (Child Care Subsidy, EITC, Health Insurance Marketplace Subsidies, Housing Choice Voucher, Medicaid, SNAP, TANF, TANF/VIEW, WIC
+
+Notes for #2
+If Housing Choice Voucher selected, how many bedrooms is the unit (1-4). If unknown, choose 1 bedroom for evbery 2 adults and 1 for every 2 dependents of same gender 
+
+If selecting TANF benefits, you should only be able to select one TANF or TANF/View
+
+3. Household Information
+
+Number of Adults in House Hold 
+NUmber of Children (18 years or less)
+Total Number of people (AUTOMATIC: add two above)
+
+For each Adult:
+Input Age
+Yes/No whether the adult is a parent of any children listed below
+
+For each children: Select:
+ "Infant" if child is 16 months or younger
+"Toddler" if child is 16-23 months
+"Two year old" if child is 24-36 months
+"Prechool" if child is 36 months to 5 years and not yet in kindergarten
+"School age" if child is eligible to attend public school but less than 13 years
+"13 years or older" if child is 13 years or older and capable of caring from themselves
+"13-18" years old if child is physically or mentally incapable of caring for themselves
+
+
+Are any Adults disabled (select yes or no)
+Are any children disabled (select yes or no)
+
+What are the qualified shelter expenses? (dollar amount)
+Is Standard Utility Allowance being used or actual utility expenses? (Select "Actual Monthly utility costs" or "Standard Utility Allowance" (SUA))
+What are the monthly utilty expenses? (dollar amount)
+
+Tax Filing Status ("Married filing jointly" or "Single, head of household, qualifying surviving spouse"). Must be selected for EITC
+
+???? - Will There Be A Change in Income Levels (Select
+
+ "Infant" if child is 16 months or younger
+"Toddler" if child is 16-23 months
+"Two year old" if child is 24-36 months
+"Prechool" if child is 36 months to 5 years and not yet in kindergarten
+"School age" if child is eligible to attend public school but less than 13 years
+"13 years or older" if child is 13 years or older and capable of caring from themselves
+
+Income of adult(s) who answered "Yes" to being a parent to the children (total, not each)
+1. "Current all adult MONTHLY earned income 
+(round up to the closest dollar amount)"
+Do not count the income of the elderly, disabled adult or spouse
+
+2. 
+"NEW all adult MONTHLY earned income 
+(round up to the closest dollar amount)"
+Do not count the income of the elderly, disabled adult or spouse
+
+3. Is There Social Security Income? (Yes Or No)
+
+Income of adult(s) who answered "No" to being a parent to the children (total, not each)
+1. "Current all adult MONTHLY earned income 
+(round up to the closest dollar amount)"
+Do not count the income of the elderly, disabled adult or spouse
+
+2. 
+"NEW all adult MONTHLY earned income 
+(round up to the closest dollar amount)"
+Do not count the income of the elderly, disabled adult or spouse
+
+3. Is There Social Security Income? (Yes Or No)
+
+
+
+Mandatory OUTPUTS:
+Row 1:
+Total Household Income = Current all adult MONTHLY earned income from Parents who answered yes + Current all adult MONTHLY earned income from parents who answered no
+Monthly Selected Benefits = Child Care Subsidy + (EITC + VA EITC (EITC/12)) + Health Insurance Marketplace Subsidies + HCV Program + Medicaid + Snap + TANF + TANF/VIEW + WIC below
+Overall Resources (Selected Benefits + income) = Monthly Selected Benefits + Total Household Income
+Child Care Subsidy = Exact Income-start (from Child Care subsidy below)
+(EITC + VA EITC (EITC/12)) = 
+Health Insurance Marketplace Subsidies = 
+HCV Program = 
+Medicaid = 
+Snap = 
+TANF = 
+TANF/VIEW = 
+WIC = 
+
+Row 2:
+New Total Household Income = NEW all adult MONTHLY earned income from Parents who answered yes + NEW all adult MONTHLY earned income from parents who answered no
+Monthly Selected Benefits = Child Care Subsidy + (EITC + VA EITC (EITC/12)) + Health Insurance Marketplace Subsidies + HCV Program + Medicaid + Snap + TANF + TANF/VIEW + WIC below
+Overall Resources (Selected Benefits + income) = Monthly Selected Benefits + Total Household Income
+Child Care Subsidy = Exact Income-new (from Child Care subsidy below)
+(EITC + VA EITC (EITC/12)) = 
+Health Insurance Marketplace Subsidies = 
+HCV Program = 
+Medicaid = 
+Snap = 
+TANF = 
+TANF/VIEW = 
+WIC = 
+
+
+Difference Monthly Selected Benefits = Monthly Selected Benefits (row 1) - Monthly Selected Benefits (row 2)
+Difference Overall Resources = Overall Resources (row 1) - Overall Resources (row 2)
+
+
+
+---Child Care Subsidy (NOT DONE) ---
+Inputs (taken from Main):
+1. Location
+Child care group = VLOOKUP(location, Location specific data, child care grouping column)
+2. NUmber in Household
+3. Number of eligible children infant (=COUNTIF('Total income package'!$B$48:$B$54,"Infant"))
+4. Number of eligible children toddler (=COUNTIF('Total income package'!$B$48:$B$54,"Toddler"))
+5. Number of Eligble children 2yo (=COUNTIF('Total income package'!$B$48:$B$54,"Two year old"))
+6. Number of eligble children preschool (=COUNTIF('Total income package'!$B$48:$B$54,"Preschool"))
+7. Number of eligiible children school age (=COUNTIF('Total income package'!$B$48:$B$54,"School age"))
+8 Number of eligible children 13-18 unable to care for themselves (=COUNTIF('Total income package'!$B$48:$B$54,"13-18 years old"))
+9. Annual FPL for Household number (=VLOOKUP(B2,'Program specific data'!A5:C13,2))
+10. Monthly FPL for Household number (=VLOOKUP(B2,'Program specific data'!A5:C13,3))
+11. Monthly Income limit for group and HH size (=IF(A3=1,VLOOKUP(B2,'Program specific data'!A20:F27,3,FALSE),IF(A3=2,VLOOKUP(B2,'Program specific data'!A20:F27,4,FALSE),IF(A3=3,VLOOKUP(B2,'Program specific data'!A20:F27,5),IF(A3=4,VLOOKUP(B2,'Program specific data'!A20:F27,6,FALSE)))))
+12. 85% SMI (=VLOOKUP(B2,'Program specific data'!A20:B27,2)
+
+
+
+If group = 1 → use Group I limit
+If group = 2 → use Group II limit
+If group = 3 → use Group III limit
+If group = 4 → use Group IV limit
+
+For each income row, calculate eligibility
+Annual earned income
+Monthly earned income = annual / 12
+Social Security income = Total income package D80
+Total monthly income = monthly earned income + Social Security income
+Percent FPL = total monthly income / monthly FPL
+
+Important: the sheet says child care disregards SSI, TANF, and child earnings if under 18.
+
+The person can qualify if any of these are Yes:
+
+Eligible by SMI
+Eligible by FPL/locality income limit
+Eligible by TANF
+
+
+Goal Returns:
+Exact Income-start
+
+Exact Income new
+
+
+
+--- EITC + VA + EITC (EITC/12)) --
+
+--- Health Insurance Marketplace Subsidies ---
+
+--- HCV Program ---
+
+--- Medicaid ---
+
+--- Snap ---
+
+--- TANF ---
+
+--- TANG/View ---
+
+--- WIC ---
+
+
+
+
+
+
+
+
+
+
+
+
+
+

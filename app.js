@@ -1,0 +1,992 @@
+(function () {
+  "use strict";
+
+  const COUNT_MAX = 20;
+
+  /** @param {string} id */
+  function $(id) {
+    const el = document.getElementById(id);
+    if (!el) throw new Error("Missing element: #" + id);
+    return el;
+  }
+
+  function parseNonNegativeNumber(value) {
+    const n = parseFloat(String(value).trim());
+    if (Number.isNaN(n) || n < 0) return 0;
+    return n;
+  }
+
+  function parseOptionalNonNegativeNumber(value) {
+    const raw = String(value).trim();
+    if (!raw) return null;
+    return parseNonNegativeNumber(raw);
+  }
+
+  function isRadioYes(name) {
+    const el = document.querySelector('input[name="' + name + '"]:checked');
+    return el instanceof HTMLInputElement && el.value === "yes";
+  }
+
+  function setPanelVisible(panelId, visible) {
+    const panel = document.getElementById(panelId);
+    if (!panel) return;
+    panel.classList.toggle("is-hidden", !visible);
+    panel.hidden = !visible;
+  }
+
+  function updateChildSsiPanel() {
+    setPanelVisible(
+      "child-ssi-panel",
+      isRadioYes("children_disabled") && isRadioYes("child_ssi_income")
+    );
+  }
+
+  function updateDisabilityPanels() {
+    setPanelVisible("adult-disability-panel", isRadioYes("adults_disabled"));
+    const childrenYes = isRadioYes("children_disabled");
+    setPanelVisible("child-disability-panel", childrenYes);
+    if (!childrenYes) {
+      setPanelVisible("child-ssi-panel", false);
+    } else {
+      updateChildSsiPanel();
+    }
+  }
+
+  function updateParentSsPanels() {
+    setPanelVisible("parent-yes-ss-panel", isRadioYes("parent_yes_ss"));
+    setPanelVisible("parent-no-ss-panel", isRadioYes("parent_no_ss"));
+  }
+
+  function getMonthlySocialSecurityTotal() {
+    const legacyEl = document.getElementById("child-care-monthly-ss");
+    const legacyTotal =
+      legacyEl instanceof HTMLInputElement ? parseNonNegativeNumber(legacyEl.value) : 0;
+    const parentYes = isRadioYes("parent_yes_ss");
+    const parentNo = isRadioYes("parent_no_ss");
+    if (!parentYes && !parentNo) return legacyTotal;
+
+    const yesEl = document.getElementById("parent-yes-ss-amount");
+    const noEl = document.getElementById("parent-no-ss-amount");
+    const yesAmount =
+      parentYes && yesEl instanceof HTMLInputElement
+        ? parseOptionalNonNegativeNumber(yesEl.value)
+        : null;
+    const noAmount =
+      parentNo && noEl instanceof HTMLInputElement
+        ? parseOptionalNonNegativeNumber(noEl.value)
+        : null;
+    if (yesAmount === null && noAmount === null) return legacyTotal;
+
+    return (yesAmount !== null ? yesAmount : 0) + (noAmount !== null ? noAmount : 0);
+  }
+
+  function getChildSsiMonthlyTotal() {
+    if (!isRadioYes("children_disabled") || !isRadioYes("child_ssi_income")) return 0;
+    const el = document.getElementById("child-ssi-total-monthly");
+    return el instanceof HTMLInputElement ? parseNonNegativeNumber(el.value) : 0;
+  }
+
+  function refreshBenefitIncomeFromForm() {
+    updateChildCareSubsidyOutputs();
+    updateHcvOutputs();
+    updateTanfOutputs();
+    updateWicOutputs();
+  }
+
+  function snapUtilityStandardMonthly(householdSize) {
+    const hh = Math.max(1, Math.min(8, Math.floor(Number(householdSize)) || 1));
+    const table = { 1: 375, 2: 375, 3: 375, 4: 476, 5: 475, 6: 476, 7: 476, 8: 476 };
+    return table[hh] || 0;
+  }
+
+  function formatCurrency(amount) {
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(amount);
+  }
+
+  /** EITC/12 — two decimals to match typical monthly split of annual credit. */
+  function formatEitcMonthly(amount) {
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(amount);
+  }
+
+  /** Medicaid N212/N214 can be half-dollars (Program spend rates). */
+  function formatMedicaidMonthly(amount) {
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 2,
+    }).format(amount);
+  }
+
+  /** TANF-VIEW L/T and MAX(L,T) — cents to match workbook (e.g. 249.80). */
+  function formatTanfMonthly(amount) {
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(amount);
+  }
+
+  /** HCV Q209/Q211 — cents to match workbook display (e.g. 1266.06). */
+  function formatHcvMonthly(amount) {
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(amount);
+  }
+
+  function filingIsMarriedJointly() {
+    const el = document.querySelector('input[name="tax_filing_status"]:checked');
+    return el instanceof HTMLInputElement && el.value === "mfj";
+  }
+
+  function initLocalitySelect() {
+    const select = $("locality");
+    const frag = document.createDocumentFragment();
+    for (const name of LOCALITIES) {
+      const opt = document.createElement("option");
+      opt.value = name;
+      opt.textContent = name;
+      frag.appendChild(opt);
+    }
+    select.appendChild(frag);
+  }
+
+  function initBenefitCheckboxes() {
+    const container = $("benefits-checkboxes");
+    container.innerHTML = "";
+    for (const prog of BENEFIT_PROGRAMS) {
+      const wrap = document.createElement("div");
+      const label = document.createElement("label");
+      const input = document.createElement("input");
+      input.type = "checkbox";
+      input.name = "benefits";
+      input.value = prog.id;
+      input.id = "benefit-" + prog.id;
+      if (prog.id === "hcv") input.dataset.hcv = "1";
+      if (prog.id === "tanf") input.dataset.tanfPair = "tanf_view";
+      if (prog.id === "tanf_view") input.dataset.tanfPair = "tanf";
+      label.appendChild(input);
+      label.appendChild(document.createTextNode(prog.label));
+      wrap.appendChild(label);
+      container.appendChild(wrap);
+    }
+  }
+
+  function getHcvCheckbox() {
+    return document.getElementById("benefit-hcv");
+  }
+
+  function getTanfCheckboxes() {
+    return {
+      tanf: document.getElementById("benefit-tanf"),
+      tanfView: document.getElementById("benefit-tanf_view"),
+    };
+  }
+
+  function getEitcCheckbox() {
+    return document.getElementById("benefit-eitc");
+  }
+
+  function getChildCareSubsidyCheckbox() {
+    return document.getElementById("benefit-child_care_subsidy");
+  }
+
+  function getMarketplaceCheckbox() {
+    return document.getElementById("benefit-marketplace");
+  }
+
+  function getMedicaidCheckbox() {
+    return document.getElementById("benefit-medicaid");
+  }
+
+  function getWicCheckbox() {
+    return document.getElementById("benefit-wic");
+  }
+
+  function getWicEligiblePersonCount() {
+    const c = getChildCareCountsFromForm();
+    return c.infant + c.toddler + c.two + c.preschool;
+  }
+
+  /** Adults who answered Yes to "Parent of any children listed below?" (TANF-VIEW C4 / D6 path). */
+  function getTanfParentYesCountFromForm() {
+    const n = clampCount($("num-adults").value);
+    let count = 0;
+    for (let i = 0; i < n; i++) {
+      const el = document.querySelector(
+        'input[name="adult_parent_' + i + '"]:checked'
+      );
+      if (el instanceof HTMLInputElement && el.value === "yes") count += 1;
+    }
+    return count;
+  }
+
+  function buildTanfParams(monthlyEarned) {
+    const locality = $("locality").value;
+    const a3 =
+      typeof getTanfRegionGroupForLocality === "function"
+        ? getTanfRegionGroupForLocality(locality)
+        : 1;
+    const children = clampCount($("num-children").value);
+    const tanfCb = document.getElementById("benefit-tanf");
+    const tanfViewCb = document.getElementById("benefit-tanf_view");
+    return {
+      monthlyEarned: monthlyEarned,
+      monthlySS: getMonthlySocialSecurityTotal(),
+      tanfParentYesCount: getTanfParentYesCountFromForm(),
+      tipD61: 0,
+      tipD66ChildrenNotInTanfAu: 0,
+      tipB31Children: children,
+      tanfRegionGroupA3: a3,
+      tanfSelected: !!(tanfCb && tanfCb.checked),
+      tanfViewSelected: !!(tanfViewCb && tanfViewCb.checked),
+    };
+  }
+
+  /** WIC column D: both TANF-VIEW rows use current packaged earned (B90) in the workbook. */
+  function buildTanfParamsForWic() {
+    return buildTanfParams(monthlyEarnedCurrentDollars());
+  }
+
+  function getAdultAgesFromForm() {
+    const ages = [];
+    const n = clampCount($("num-adults").value);
+    for (let i = 0; i < 8; i++) {
+      if (i < n) {
+        const el = document.getElementById("adult-age-" + i);
+        ages.push(el ? Math.floor(parseNonNegativeNumber(el.value)) : 0);
+      } else {
+        ages.push(0);
+      }
+    }
+    return ages;
+  }
+
+  function getChildCareCountsFromForm() {
+    const counts = {
+      infant: 0,
+      toddler: 0,
+      two: 0,
+      preschool: 0,
+      school: 0,
+      teenIncapable: 0,
+    };
+    document.querySelectorAll("[id^=\"child-band-\"]").forEach(function (sel) {
+      if (!(sel instanceof HTMLSelectElement)) return;
+      const v = sel.value;
+      if (v === "infant") counts.infant += 1;
+      else if (v === "toddler") counts.toddler += 1;
+      else if (v === "two") counts.two += 1;
+      else if (v === "preschool") counts.preschool += 1;
+      else if (v === "school_age") counts.school += 1;
+      else if (v === "teen_incapable") counts.teenIncapable += 1;
+    });
+    return counts;
+  }
+
+  function monthlyEarnedCurrentDollars() {
+    const yc = parseNonNegativeNumber($("parent-yes-current").value);
+    const nc = parseNonNegativeNumber($("parent-no-current").value);
+    return Math.ceil(yc) + Math.ceil(nc);
+  }
+
+  function monthlyEarnedNewDollars() {
+    const yn = parseNonNegativeNumber($("parent-yes-new").value);
+    const nn = parseNonNegativeNumber($("parent-no-new").value);
+    return Math.ceil(yn) + Math.ceil(nn);
+  }
+
+  function updateHcvPanel() {
+    const hcv = getHcvCheckbox();
+    const panel = $("hcv-panel");
+    const bedrooms = $("hcv-bedrooms");
+    if (!hcv || !panel || !bedrooms) return;
+    const on = hcv.checked;
+    panel.classList.toggle("is-hidden", !on);
+    panel.hidden = !on;
+    bedrooms.required = on;
+    if (!on) {
+      bedrooms.value = "";
+    }
+    updateHcvOutputs();
+  }
+
+  function onBenefitChange(ev) {
+    const target = ev.target;
+    if (!(target instanceof HTMLInputElement) || target.type !== "checkbox") return;
+
+    if (target.dataset.tanfPair) {
+      const otherId = "benefit-" + target.dataset.tanfPair;
+      const other = document.getElementById(otherId);
+      if (target.checked && other instanceof HTMLInputElement) {
+        other.checked = false;
+      }
+    }
+
+    if (target.dataset.hcv === "1" || target.id === "benefit-hcv") {
+      updateHcvPanel();
+    }
+
+    updateEitcTaxWarning();
+    updateChildCareSubsidyOutputs();
+    updateEitcOutputs();
+    updateMarketplaceOutputs();
+    updateMedicaidOutputs();
+    updateHcvOutputs();
+    updateTanfOutputs();
+    updateWicOutputs();
+  }
+
+  function updateEitcTaxWarning() {
+    const eitc = getEitcCheckbox();
+    const warning = $("eitc-tax-warning");
+    if (!eitc || !warning) return;
+    const statusSelected = document.querySelector('input[name="tax_filing_status"]:checked');
+    if (eitc.checked && !statusSelected) {
+      warning.textContent =
+        "EITC is selected: choose a tax filing status above for accurate EITC treatment.";
+      warning.classList.remove("is-hidden");
+    } else {
+      warning.textContent = "";
+      warning.classList.add("is-hidden");
+    }
+  }
+
+  function clampCount(raw) {
+    let n = parseInt(String(raw), 10);
+    if (Number.isNaN(n) || n < 0) n = 0;
+    if (n > COUNT_MAX) n = COUNT_MAX;
+    return n;
+  }
+
+  function updateTotalPeople() {
+    const adults = clampCount($("num-adults").value);
+    const children = clampCount($("num-children").value);
+    $("total-people").value = String(adults + children);
+  }
+
+  function renderAdultRows() {
+    const n = clampCount($("num-adults").value);
+    const container = $("adult-rows");
+    container.innerHTML = "";
+    for (let i = 0; i < n; i++) {
+      const card = document.createElement("div");
+      card.className = "dynamic-card";
+      card.innerHTML =
+        "<h3>Adult " +
+        (i + 1) +
+        "</h3>" +
+        '<div class="field-row-inner">' +
+        '<div class="field">' +
+        '<label for="adult-age-' +
+        i +
+        '">Age</label>' +
+        '<input type="number" id="adult-age-' +
+        i +
+        '" name="adult_age_' +
+        i +
+        '" min="0" max="120" step="1" />' +
+        "</div>" +
+        '<div class="field">' +
+        '<span class="label-like" id="adult-parent-label-' +
+        i +
+        '">Parent of any children listed below?</span>' +
+        '<div class="radio-row" role="group" aria-labelledby="adult-parent-label-' +
+        i +
+        '">' +
+        '<label><input type="radio" name="adult_parent_' +
+        i +
+        '" value="yes" /> Yes</label>' +
+        '<label><input type="radio" name="adult_parent_' +
+        i +
+        '" value="no" checked /> No</label>' +
+        "</div>" +
+        "</div>" +
+        "</div>";
+      container.appendChild(card);
+    }
+  }
+
+  function renderChildRows() {
+    const n = clampCount($("num-children").value);
+    const container = $("child-rows");
+    container.innerHTML = "";
+    for (let i = 0; i < n; i++) {
+      const card = document.createElement("div");
+      card.className = "dynamic-card";
+      const h3 = document.createElement("h3");
+      h3.textContent = "Child " + (i + 1);
+      const field = document.createElement("div");
+      field.className = "field";
+      const label = document.createElement("label");
+      label.htmlFor = "child-band-" + i;
+      label.textContent = "Age category";
+      const select = document.createElement("select");
+      select.id = "child-band-" + i;
+      select.name = "child_band_" + i;
+      const empty = document.createElement("option");
+      empty.value = "";
+      empty.textContent = "Select…";
+      select.appendChild(empty);
+      for (const band of CHILD_AGE_BANDS) {
+        const opt = document.createElement("option");
+        opt.value = band.value;
+        opt.textContent = band.label;
+        select.appendChild(opt);
+      }
+      field.appendChild(label);
+      field.appendChild(select);
+      card.appendChild(h3);
+      card.appendChild(field);
+      container.appendChild(card);
+    }
+  }
+
+  function syncCountInputs() {
+    const adultsEl = $("num-adults");
+    const childrenEl = $("num-children");
+    adultsEl.value = String(clampCount(adultsEl.value));
+    childrenEl.value = String(clampCount(childrenEl.value));
+  }
+
+  function onHouseholdCountChange() {
+    syncCountInputs();
+    updateTotalPeople();
+    renderAdultRows();
+    renderChildRows();
+    updateChildCareSubsidyOutputs();
+    updateEitcOutputs();
+    updateMarketplaceOutputs();
+    updateMedicaidOutputs();
+    updateHcvOutputs();
+    updateTanfOutputs();
+    updateWicOutputs();
+  }
+
+  function updateUtilityFieldState() {
+    const method = document.querySelector('input[name="utility_method"]:checked');
+    const input = $("utility-expenses");
+    const hint = $("utility-expenses-hint");
+    if (!method || !input || !hint) return;
+    const isSua = method.value === "sua";
+    input.disabled = isSua;
+    if (isSua) {
+      hint.textContent =
+        "Standard Utility Allowance (SUA) uses a standard amount in benefit rules; monthly utility expenses are not used the same way as actual costs.";
+    } else {
+      hint.textContent =
+        "Enter your total actual monthly utility costs when using actual costs.";
+    }
+    updateHcvOutputs();
+  }
+
+  function updateIncomeTotals() {
+    const yc = parseNonNegativeNumber($("parent-yes-current").value);
+    const yn = parseNonNegativeNumber($("parent-yes-new").value);
+    const nc = parseNonNegativeNumber($("parent-no-current").value);
+    const nn = parseNonNegativeNumber($("parent-no-new").value);
+    const totalCurrent = Math.ceil(yc) + Math.ceil(nc);
+    const totalNew = Math.ceil(yn) + Math.ceil(nn);
+    $("output-total-current").textContent = formatCurrency(totalCurrent);
+    $("output-total-new").textContent = formatCurrency(totalNew);
+    updateChildCareSubsidyOutputs();
+    updateEitcOutputs();
+    updateMarketplaceOutputs();
+    updateMedicaidOutputs();
+    updateHcvOutputs();
+    updateTanfOutputs();
+    updateWicOutputs();
+  }
+
+  function updateChildCareSubsidyOutputs() {
+    const outCur = $("output-cc-subsidy-current");
+    const outNew = $("output-cc-subsidy-new");
+    const ccCb = getChildCareSubsidyCheckbox();
+    if (
+      typeof computeChildCareSubsidyMonthly !== "function" ||
+      !ccCb
+    ) {
+      outCur.textContent = "—";
+      outNew.textContent = "—";
+      return;
+    }
+
+    if (!ccCb.checked) {
+      outCur.textContent = "—";
+      outNew.textContent = "—";
+      return;
+    }
+
+    const locality = $("locality").value;
+    const householdSize = clampCount($("num-adults").value) + clampCount($("num-children").value);
+    const counts = getChildCareCountsFromForm();
+    const monthlySS = getMonthlySocialSecurityTotal();
+    const tanfL = parseNonNegativeNumber($("cc-tanf-l").value);
+    const tanfT = parseNonNegativeNumber($("cc-tanf-t").value);
+
+    const base = {
+      childCareSelected: true,
+      locality: locality,
+      householdSize: householdSize,
+      counts: counts,
+      monthlySocialSecurity: monthlySS,
+      tanfPathL: tanfL,
+      tanfPathT: tanfT,
+    };
+
+    const cur = computeChildCareSubsidyMonthly(
+      Object.assign({}, base, { monthlyEarned: monthlyEarnedCurrentDollars() })
+    );
+    const neu = computeChildCareSubsidyMonthly(
+      Object.assign({}, base, { monthlyEarned: monthlyEarnedNewDollars() })
+    );
+
+    outCur.textContent = formatCurrency(Math.max(0, cur));
+    outNew.textContent = formatCurrency(Math.max(0, neu));
+  }
+
+  function updateEitcOutputs() {
+    const outCur = $("output-eitc-current");
+    const outNew = $("output-eitc-new");
+    const eitcCb = getEitcCheckbox();
+    if (typeof computeEitcMonthlyFromMonthlyEarned !== "function" || !eitcCb) {
+      outCur.textContent = "—";
+      outNew.textContent = "—";
+      return;
+    }
+    if (!eitcCb.checked) {
+      outCur.textContent = "—";
+      outNew.textContent = "—";
+      return;
+    }
+
+    const numChildren = clampCount($("num-children").value);
+    const mfj = filingIsMarriedJointly();
+    const base = {
+      numChildren: numChildren,
+      filingMarriedJointly: mfj,
+      eitcEnabled: true,
+    };
+
+    const cur = computeEitcMonthlyFromMonthlyEarned(
+      Object.assign({}, base, { monthlyEarned: monthlyEarnedCurrentDollars() })
+    );
+    const neu = computeEitcMonthlyFromMonthlyEarned(
+      Object.assign({}, base, { monthlyEarned: monthlyEarnedNewDollars() })
+    );
+
+    outCur.textContent = formatEitcMonthly(Math.max(0, cur));
+    outNew.textContent = formatEitcMonthly(Math.max(0, neu));
+  }
+
+  function updateMarketplaceOutputs() {
+    const outCur = $("output-marketplace-current");
+    const outNew = $("output-marketplace-new");
+    const mpCb = getMarketplaceCheckbox();
+    if (typeof computeMarketplaceSubsidyMonthlyL !== "function" || !mpCb) {
+      outCur.textContent = "—";
+      outNew.textContent = "—";
+      return;
+    }
+    if (!mpCb.checked) {
+      outCur.textContent = "—";
+      outNew.textContent = "—";
+      return;
+    }
+
+    const locality = $("locality").value;
+    const householdSize = clampCount($("num-adults").value) + clampCount($("num-children").value);
+    const adultAges = getAdultAgesFromForm();
+    const base = {
+      marketplaceSelected: true,
+      locality: locality,
+      householdSize: householdSize,
+      adultAges: adultAges,
+    };
+
+    const cur = computeMarketplaceSubsidyMonthlyL(
+      Object.assign({}, base, { monthlyEarned: monthlyEarnedCurrentDollars() })
+    );
+    const neu = computeMarketplaceSubsidyMonthlyL(
+      Object.assign({}, base, { monthlyEarned: monthlyEarnedNewDollars() })
+    );
+
+    outCur.textContent = formatCurrency(Math.max(0, cur));
+    outNew.textContent = formatCurrency(Math.max(0, neu));
+  }
+
+  function updateMedicaidOutputs() {
+    const outCur = $("output-medicaid-current");
+    const outNew = $("output-medicaid-new");
+    const mcCb = getMedicaidCheckbox();
+    if (typeof computeMedicaidMonthlyN !== "function" || !mcCb) {
+      outCur.textContent = "—";
+      outNew.textContent = "—";
+      return;
+    }
+    if (!mcCb.checked) {
+      outCur.textContent = "—";
+      outNew.textContent = "—";
+      return;
+    }
+
+    const adults = clampCount($("num-adults").value);
+    const children = clampCount($("num-children").value);
+    const householdSize = adults + children;
+    const base = {
+      medicaidSelected: true,
+      householdSize: householdSize,
+      numAdults: adults,
+      numChildren: children,
+    };
+
+    const cur = computeMedicaidMonthlyN(
+      Object.assign({}, base, { monthlyEarned: monthlyEarnedCurrentDollars() })
+    );
+    const neu = computeMedicaidMonthlyN(
+      Object.assign({}, base, { monthlyEarned: monthlyEarnedNewDollars() })
+    );
+
+    outCur.textContent = formatMedicaidMonthly(Math.max(0, cur));
+    outNew.textContent = formatMedicaidMonthly(Math.max(0, neu));
+  }
+
+  function updateHcvOutputs() {
+    const outCur = $("output-hcv-current");
+    const outNew = $("output-hcv-new");
+    const hcvCb = getHcvCheckbox();
+    if (typeof computeHcvProgramMonthlyQ !== "function" || !hcvCb) {
+      outCur.textContent = "—";
+      outNew.textContent = "—";
+      return;
+    }
+    if (!hcvCb.checked) {
+      outCur.textContent = "—";
+      outNew.textContent = "—";
+      return;
+    }
+
+    const bedroomsEl = $("hcv-bedrooms");
+    const bedrooms = bedroomsEl instanceof HTMLSelectElement ? bedroomsEl.value : "";
+    if (!bedrooms) {
+      outCur.textContent = "—";
+      outNew.textContent = "—";
+      return;
+    }
+
+    const locality = $("locality").value;
+    const adults = clampCount($("num-adults").value);
+    const children = clampCount($("num-children").value);
+    const householdSize = adults + children;
+    const monthlySS = getMonthlySocialSecurityTotal();
+    const tanfL = parseNonNegativeNumber($("cc-tanf-l").value);
+    const tanfT = parseNonNegativeNumber($("cc-tanf-t").value);
+    const shelterMonthly = parseNonNegativeNumber($("shelter-expenses").value);
+    const methodEl = document.querySelector('input[name="utility_method"]:checked');
+    const isActualUtility =
+      methodEl instanceof HTMLInputElement && methodEl.value === "actual";
+    const utilityInput = $("utility-expenses");
+    const utilityMonthly =
+      isActualUtility && !utilityInput.disabled
+        ? parseNonNegativeNumber(utilityInput.value)
+        : 0;
+    const base = {
+      hcvSelected: true,
+      locality: locality,
+      householdSize: householdSize,
+      numDependents: children,
+      adultAges: getAdultAgesFromForm(),
+      monthlySocialSecurity: monthlySS,
+      monthlySsi: getChildSsiMonthlyTotal(),
+      tanfL: tanfL,
+      tanfT: tanfT,
+      bedrooms: parseInt(bedrooms, 10),
+      shelterMonthly: shelterMonthly,
+      utilityMonthly: utilityMonthly,
+      snapUtilityAllowanceMonthly: snapUtilityStandardMonthly(householdSize),
+    };
+
+    const cur = computeHcvProgramMonthlyQ(
+      Object.assign({}, base, { monthlyEarned: monthlyEarnedCurrentDollars() })
+    );
+    const neu = computeHcvProgramMonthlyQ(
+      Object.assign({}, base, { monthlyEarned: monthlyEarnedNewDollars() })
+    );
+
+    outCur.textContent = formatHcvMonthly(Math.max(0, cur));
+    outNew.textContent = formatHcvMonthly(Math.max(0, neu));
+  }
+
+  function updateTanfOutputs() {
+    const outMaxCur = $("output-tanf-max-current");
+    const outMaxNew = $("output-tanf-max-new");
+    const outViewTCur = $("output-tanf-view-t-current");
+    const outViewTNew = $("output-tanf-view-t-new");
+    const tanfCb = getTanfCheckboxes().tanf;
+    const tanfViewCb = getTanfCheckboxes().tanfView;
+
+    if (typeof computeTanfMaxLT !== "function" || typeof computeTanfViewTOnly !== "function") {
+      outMaxCur.textContent = "—";
+      outMaxNew.textContent = "—";
+      outViewTCur.textContent = "—";
+      outViewTNew.textContent = "—";
+      return;
+    }
+
+    const earnedCur = monthlyEarnedCurrentDollars();
+    // Workbook B212 and B214 both use Total income package B90 (current earned), not B91.
+    const pCur = buildTanfParams(earnedCur);
+    const pNew = buildTanfParams(earnedCur);
+    const maxCur = Math.max(0, computeTanfMaxLT(pCur));
+    const maxNew = Math.max(0, computeTanfMaxLT(pNew));
+    const tCur = Math.max(0, computeTanfViewTOnly(pCur));
+    const tNew = Math.max(0, computeTanfViewTOnly(pNew));
+
+    if (tanfCb && tanfCb.checked) {
+      outMaxCur.textContent = formatTanfMonthly(Math.max(0, maxCur));
+      outMaxNew.textContent = formatTanfMonthly(Math.max(0, maxNew));
+    } else {
+      outMaxCur.textContent = "—";
+      outMaxNew.textContent = "—";
+    }
+
+    if (tanfViewCb && tanfViewCb.checked) {
+      outViewTCur.textContent = formatTanfMonthly(Math.max(0, tCur));
+      outViewTNew.textContent = formatTanfMonthly(Math.max(0, tNew));
+    } else {
+      outViewTCur.textContent = "—";
+      outViewTNew.textContent = "—";
+    }
+  }
+
+  function updateWicOutputs() {
+    const outCur = $("output-wic-current");
+    const outNew = $("output-wic-new");
+    const wicCb = getWicCheckbox();
+    if (
+      typeof computeWicMonthlyF !== "function" ||
+      typeof computeTanfMaxLT !== "function" ||
+      !wicCb
+    ) {
+      outCur.textContent = "—";
+      outNew.textContent = "—";
+      return;
+    }
+    if (!wicCb.checked) {
+      outCur.textContent = "—";
+      outNew.textContent = "—";
+      return;
+    }
+
+    const adults = clampCount($("num-adults").value);
+    const children = clampCount($("num-children").value);
+    const householdSize = adults + children;
+    const tanfMax = Math.max(0, computeTanfMaxLT(buildTanfParamsForWic()));
+    const wicH2 = getMonthlySocialSecurityTotal();
+    const wicG = getWicEligiblePersonCount();
+    const earnedCur = monthlyEarnedCurrentDollars();
+    const earnedNew = monthlyEarnedNewDollars();
+
+    const wicCur = computeWicMonthlyF({
+      wicSelected: true,
+      householdSizeWic: householdSize,
+      monthlyEarnedWicB: earnedCur,
+      wicUnearnedH2: wicH2,
+      tanfMaxLTForWicD: tanfMax,
+      wicEligiblePersonCount: wicG,
+    });
+    const wicNeu = computeWicMonthlyF({
+      wicSelected: true,
+      householdSizeWic: householdSize,
+      monthlyEarnedWicB: earnedNew,
+      wicUnearnedH2: wicH2,
+      tanfMaxLTForWicD: tanfMax,
+      wicEligiblePersonCount: wicG,
+    });
+
+    outCur.textContent = formatMedicaidMonthly(Math.max(0, wicCur));
+    outNew.textContent = formatMedicaidMonthly(Math.max(0, wicNeu));
+  }
+
+  function bindFormListeners() {
+    $("num-adults").addEventListener("input", onHouseholdCountChange);
+    $("num-adults").addEventListener("change", onHouseholdCountChange);
+    $("num-children").addEventListener("input", onHouseholdCountChange);
+    $("num-children").addEventListener("change", onHouseholdCountChange);
+
+    $("benefits-checkboxes").addEventListener("change", onBenefitChange);
+
+    document.querySelectorAll('input[name="utility_method"]').forEach(function (el) {
+      el.addEventListener("change", updateUtilityFieldState);
+    });
+
+    document.querySelectorAll('input[name="tax_filing_status"]').forEach(function (el) {
+      el.addEventListener("change", updateEitcTaxWarning);
+      el.addEventListener("change", updateEitcOutputs);
+    });
+
+    document.querySelectorAll('input[name="adults_disabled"]').forEach(function (el) {
+      el.addEventListener("change", updateDisabilityPanels);
+    });
+    document.querySelectorAll('input[name="children_disabled"]').forEach(function (el) {
+      el.addEventListener("change", updateDisabilityPanels);
+    });
+    document.querySelectorAll('input[name="child_ssi_income"]').forEach(function (el) {
+      el.addEventListener("change", function () {
+        updateChildSsiPanel();
+        refreshBenefitIncomeFromForm();
+      });
+    });
+    document.querySelectorAll('input[name="parent_yes_ss"]').forEach(function (el) {
+      el.addEventListener("change", function () {
+        updateParentSsPanels();
+        refreshBenefitIncomeFromForm();
+      });
+    });
+    document.querySelectorAll('input[name="parent_no_ss"]').forEach(function (el) {
+      el.addEventListener("change", function () {
+        updateParentSsPanels();
+        refreshBenefitIncomeFromForm();
+      });
+    });
+
+    [
+      "disabled-adult-head-spouse",
+      "disabled-adult-non-elderly-not-head",
+      "disabled-adult-elderly",
+      "disabled-children-count",
+      "child-ssi-recipients",
+      "child-ssi-total-monthly",
+      "parent-yes-ss-amount",
+      "parent-no-ss-amount",
+    ].forEach(function (id) {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.addEventListener("input", refreshBenefitIncomeFromForm);
+      el.addEventListener("change", refreshBenefitIncomeFromForm);
+    });
+
+    ["parent-yes-current", "parent-yes-new", "parent-no-current", "parent-no-new"].forEach(function (
+      id
+    ) {
+      $(id).addEventListener("input", updateIncomeTotals);
+      $(id).addEventListener("change", updateIncomeTotals);
+    });
+
+    $("locality").addEventListener("change", updateChildCareSubsidyOutputs);
+    $("locality").addEventListener("change", updateMarketplaceOutputs);
+    $("locality").addEventListener("change", updateHcvOutputs);
+    $("locality").addEventListener("change", updateTanfOutputs);
+    $("locality").addEventListener("change", updateWicOutputs);
+    $("child-care-monthly-ss").addEventListener("input", updateChildCareSubsidyOutputs);
+    $("child-care-monthly-ss").addEventListener("change", updateChildCareSubsidyOutputs);
+    $("child-care-monthly-ss").addEventListener("input", updateHcvOutputs);
+    $("child-care-monthly-ss").addEventListener("change", updateHcvOutputs);
+    $("child-care-monthly-ss").addEventListener("input", updateTanfOutputs);
+    $("child-care-monthly-ss").addEventListener("change", updateTanfOutputs);
+    $("child-care-monthly-ss").addEventListener("input", updateWicOutputs);
+    $("child-care-monthly-ss").addEventListener("change", updateWicOutputs);
+    $("cc-tanf-l").addEventListener("input", updateChildCareSubsidyOutputs);
+    $("cc-tanf-l").addEventListener("change", updateChildCareSubsidyOutputs);
+    $("cc-tanf-l").addEventListener("input", updateHcvOutputs);
+    $("cc-tanf-l").addEventListener("change", updateHcvOutputs);
+    $("cc-tanf-t").addEventListener("input", updateChildCareSubsidyOutputs);
+    $("cc-tanf-t").addEventListener("change", updateChildCareSubsidyOutputs);
+    $("cc-tanf-t").addEventListener("input", updateHcvOutputs);
+    $("cc-tanf-t").addEventListener("change", updateHcvOutputs);
+    $("hcv-bedrooms").addEventListener("change", updateHcvOutputs);
+
+    $("shelter-expenses").addEventListener("input", updateHcvOutputs);
+    $("shelter-expenses").addEventListener("change", updateHcvOutputs);
+    $("utility-expenses").addEventListener("input", updateHcvOutputs);
+    $("utility-expenses").addEventListener("change", updateHcvOutputs);
+
+    $("child-rows").addEventListener("change", updateChildCareSubsidyOutputs);
+    $("child-rows").addEventListener("change", updateMedicaidOutputs);
+    $("child-rows").addEventListener("change", updateHcvOutputs);
+    $("child-rows").addEventListener("change", updateTanfOutputs);
+    $("child-rows").addEventListener("change", updateWicOutputs);
+
+    $("adult-rows").addEventListener("input", updateMarketplaceOutputs);
+    $("adult-rows").addEventListener("change", updateMarketplaceOutputs);
+    $("adult-rows").addEventListener("input", updateMedicaidOutputs);
+    $("adult-rows").addEventListener("change", updateMedicaidOutputs);
+    $("adult-rows").addEventListener("input", updateHcvOutputs);
+    $("adult-rows").addEventListener("change", updateHcvOutputs);
+    $("adult-rows").addEventListener("change", updateTanfOutputs);
+    $("adult-rows").addEventListener("change", updateWicOutputs);
+
+    const form = $("calculator-form");
+    form.addEventListener("submit", function (ev) {
+      ev.preventDefault();
+    });
+  }
+
+  function init() {
+    if (typeof LOCALITIES === "undefined" || typeof BENEFIT_PROGRAMS === "undefined") {
+      console.error("data.js must load before app.js");
+      return;
+    }
+    if (typeof CHILD_CARE_LOCALITY_BY_NAME === "undefined") {
+      console.warn("childCareLookupData.js missing — child care subsidy outputs disabled.");
+    }
+    if (typeof EITC_RATES_MFJ === "undefined") {
+      console.warn("eitcLookupData.js missing — EITC outputs disabled.");
+    }
+    if (typeof MARKETPLACE_MONTHLY_FPL_BY_HOUSEHOLD === "undefined") {
+      console.warn("marketplaceLookupData.js missing — marketplace subsidy outputs disabled.");
+    }
+    if (typeof MEDICAID_ADULT_SPEND_MONTHLY === "undefined") {
+      console.warn("medicaidLookupData.js missing — Medicaid outputs disabled.");
+    }
+    if (typeof HCV_BY_LOCALITY === "undefined") {
+      console.warn("hcvLookupData.js missing — HCV outputs disabled.");
+    }
+    if (typeof WIC_INCOME_LIMIT_BY_HH === "undefined") {
+      console.warn("snapTanfWicLookupData.js missing — WIC outputs disabled.");
+    }
+    if (typeof computeTanfMaxLT !== "function") {
+      console.warn("tanfView.js missing — TANF / TANF-VIEW outputs disabled.");
+    }
+    if (typeof computeWicMonthlyF !== "function") {
+      console.warn("wic.js missing — WIC outputs disabled.");
+    }
+    initLocalitySelect();
+    initBenefitCheckboxes();
+    bindFormListeners();
+    updateDisabilityPanels();
+    updateParentSsPanels();
+    updateHcvPanel();
+    syncCountInputs();
+    onHouseholdCountChange();
+    updateUtilityFieldState();
+    updateIncomeTotals();
+    updateEitcTaxWarning();
+    updateChildCareSubsidyOutputs();
+    updateEitcOutputs();
+    updateMedicaidOutputs();
+    updateHcvOutputs();
+    updateTanfOutputs();
+    updateWicOutputs();
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", init);
+  } else {
+    init();
+  }
+})();

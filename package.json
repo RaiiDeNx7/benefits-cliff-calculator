@@ -1,0 +1,26 @@
+{
+  "name": "cliff-app",
+  "version": "1.0.0",
+  "description": "",
+  "main": "app.js",
+  "scripts": {
+    "verify-child-care": "node scripts/verify-child-care.mjs",
+    "build-child-care-data": "node scripts/build-childCareLookupData.mjs",
+    "verify-eitc": "node scripts/verify-eitc.mjs",
+    "build-eitc-data": "node scripts/build-eitcLookupData.mjs",
+    "verify-marketplace": "node scripts/verify-marketplace.mjs",
+    "build-marketplace-data": "node scripts/build-marketplaceLookupData.mjs",
+    "verify-medicaid": "node scripts/verify-medicaid.mjs",
+    "build-medicaid-data": "node scripts/build-medicaidLookupData.mjs",
+    "verify-hcv": "node scripts/verify-hcv.mjs",
+    "build-hcv-data": "node scripts/build-hcvLookupData.mjs",
+    "verify-wic": "node scripts/verify-wic.mjs",
+    "verify-tanf": "node scripts/verify-tanf.mjs"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "xlsx": "^0.18.5"
+  }
+}
