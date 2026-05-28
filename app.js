@@ -41,8 +41,21 @@
     );
   }
 
+  function updateAdultSsiPanel() {
+    setPanelVisible(
+      "adult-ssi-panel",
+      isRadioYes("adults_disabled") && isRadioYes("adult_ssi_income")
+    );
+  }
+
   function updateDisabilityPanels() {
-    setPanelVisible("adult-disability-panel", isRadioYes("adults_disabled"));
+    const adultsYes = isRadioYes("adults_disabled");
+    setPanelVisible("adult-disability-panel", adultsYes);
+    if (!adultsYes) {
+      setPanelVisible("adult-ssi-panel", false);
+    } else {
+      updateAdultSsiPanel();
+    }
     const childrenYes = isRadioYes("children_disabled");
     setPanelVisible("child-disability-panel", childrenYes);
     if (!childrenYes) {
@@ -86,9 +99,20 @@
     return el instanceof HTMLInputElement ? parseNonNegativeNumber(el.value) : 0;
   }
 
+  function getAdultSsiMonthlyTotal() {
+    if (!isRadioYes("adults_disabled") || !isRadioYes("adult_ssi_income")) return 0;
+    const el = document.getElementById("adult-ssi-total-monthly");
+    return el instanceof HTMLInputElement ? parseNonNegativeNumber(el.value) : 0;
+  }
+
+  function getAllSsiMonthlyTotal() {
+    return getChildSsiMonthlyTotal() + getAdultSsiMonthlyTotal();
+  }
+
   function refreshBenefitIncomeFromForm() {
     updateChildCareSubsidyOutputs();
     updateHcvOutputs();
+    updateSnapOutputs();
     updateTanfOutputs();
     updateWicOutputs();
   }
@@ -215,6 +239,10 @@
 
   function getWicCheckbox() {
     return document.getElementById("benefit-wic");
+  }
+
+  function getSnapCheckbox() {
+    return document.getElementById("benefit-snap");
   }
 
   function getWicEligiblePersonCount() {
@@ -347,6 +375,7 @@
     updateMarketplaceOutputs();
     updateMedicaidOutputs();
     updateHcvOutputs();
+    updateSnapOutputs();
     updateTanfOutputs();
     updateWicOutputs();
   }
@@ -473,6 +502,7 @@
     updateMarketplaceOutputs();
     updateMedicaidOutputs();
     updateHcvOutputs();
+    updateSnapOutputs();
     updateTanfOutputs();
     updateWicOutputs();
   }
@@ -492,6 +522,7 @@
         "Enter your total actual monthly utility costs when using actual costs.";
     }
     updateHcvOutputs();
+    updateSnapOutputs();
   }
 
   function updateIncomeTotals() {
@@ -711,7 +742,7 @@
       numDependents: children,
       adultAges: getAdultAgesFromForm(),
       monthlySocialSecurity: monthlySS,
-      monthlySsi: getChildSsiMonthlyTotal(),
+      monthlySsi: getAllSsiMonthlyTotal(),
       tanfL: tanfL,
       tanfT: tanfT,
       bedrooms: parseInt(bedrooms, 10),
@@ -729,6 +760,60 @@
 
     outCur.textContent = formatHcvMonthly(Math.max(0, cur));
     outNew.textContent = formatHcvMonthly(Math.max(0, neu));
+  }
+
+  function updateSnapOutputs() {
+    const outCur = $("output-snap-current");
+    const outNew = $("output-snap-new");
+    const snapCb = getSnapCheckbox();
+    if (typeof computeSnapV !== "function" || !snapCb) {
+      outCur.textContent = "—";
+      outNew.textContent = "—";
+      return;
+    }
+    if (!snapCb.checked) {
+      outCur.textContent = "—";
+      outNew.textContent = "—";
+      return;
+    }
+
+    const adults = clampCount($("num-adults").value);
+    const children = clampCount($("num-children").value);
+    const tanfBase = buildTanfParams(monthlyEarnedCurrentDollars());
+    const methodEl = document.querySelector('input[name="utility_method"]:checked');
+    const utilityMethod =
+      methodEl instanceof HTMLInputElement && methodEl.value === "actual" ? "actual" : "sua";
+    const elderlyAdults = getAdultAgesFromForm().filter(function (age) {
+      return age >= 60;
+    }).length;
+
+    const base = {
+      snapSelected: true,
+      householdSizeSnap: adults + children,
+      monthlyEarnedTanfB: monthlyEarnedCurrentDollars(),
+      monthlySS: getMonthlySocialSecurityTotal(),
+      countableUnearnedOther: 0,
+      shelterMonthly: parseNonNegativeNumber($("shelter-expenses").value),
+      utilityMethod: utilityMethod,
+      utilityMonthly: parseNonNegativeNumber($("utility-expenses").value),
+      elderlyAdultsSnapCount: elderlyAdults,
+      disabilitySupportIncomeSnap: getAllSsiMonthlyTotal(),
+      tanfAnnualForSnapC205: 99500,
+      tanfCaretakerDisabledYesCount: tanfBase.tanfParentYesCount || 0,
+      tanfParentYesCount: tanfBase.tanfParentYesCount || 0,
+      tipD61: tanfBase.tipD61 || 0,
+      tipD66ChildrenNotInTanfAu: tanfBase.tipD66ChildrenNotInTanfAu || 0,
+      tipB31Children: children,
+      tanfRegionGroupA3: tanfBase.tanfRegionGroupA3 || 1,
+      tanfSelected: !!tanfBase.tanfSelected,
+      tanfViewSelected: !!tanfBase.tanfViewSelected,
+    };
+
+    const cur = computeSnapV(Object.assign({}, base, { monthlyEarnedSnapD: monthlyEarnedCurrentDollars() }));
+    const neu = computeSnapV(Object.assign({}, base, { monthlyEarnedSnapD: monthlyEarnedNewDollars() }));
+
+    outCur.textContent = formatCurrency(Math.max(0, cur));
+    outNew.textContent = formatCurrency(Math.max(0, neu));
   }
 
   function updateTanfOutputs() {
@@ -851,6 +936,12 @@
         refreshBenefitIncomeFromForm();
       });
     });
+    document.querySelectorAll('input[name="adult_ssi_income"]').forEach(function (el) {
+      el.addEventListener("change", function () {
+        updateAdultSsiPanel();
+        refreshBenefitIncomeFromForm();
+      });
+    });
     document.querySelectorAll('input[name="parent_yes_ss"]').forEach(function (el) {
       el.addEventListener("change", function () {
         updateParentSsPanels();
@@ -869,6 +960,9 @@
       "disabled-adult-non-elderly-not-head",
       "disabled-adult-elderly",
       "disabled-children-count",
+      "adult-ssi-parent-count",
+      "adult-ssi-recipients",
+      "adult-ssi-total-monthly",
       "child-ssi-recipients",
       "child-ssi-total-monthly",
       "parent-yes-ss-amount",
@@ -890,12 +984,15 @@
     $("locality").addEventListener("change", updateChildCareSubsidyOutputs);
     $("locality").addEventListener("change", updateMarketplaceOutputs);
     $("locality").addEventListener("change", updateHcvOutputs);
+    $("locality").addEventListener("change", updateSnapOutputs);
     $("locality").addEventListener("change", updateTanfOutputs);
     $("locality").addEventListener("change", updateWicOutputs);
     $("child-care-monthly-ss").addEventListener("input", updateChildCareSubsidyOutputs);
     $("child-care-monthly-ss").addEventListener("change", updateChildCareSubsidyOutputs);
     $("child-care-monthly-ss").addEventListener("input", updateHcvOutputs);
     $("child-care-monthly-ss").addEventListener("change", updateHcvOutputs);
+    $("child-care-monthly-ss").addEventListener("input", updateSnapOutputs);
+    $("child-care-monthly-ss").addEventListener("change", updateSnapOutputs);
     $("child-care-monthly-ss").addEventListener("input", updateTanfOutputs);
     $("child-care-monthly-ss").addEventListener("change", updateTanfOutputs);
     $("child-care-monthly-ss").addEventListener("input", updateWicOutputs);
@@ -912,8 +1009,12 @@
 
     $("shelter-expenses").addEventListener("input", updateHcvOutputs);
     $("shelter-expenses").addEventListener("change", updateHcvOutputs);
+    $("shelter-expenses").addEventListener("input", updateSnapOutputs);
+    $("shelter-expenses").addEventListener("change", updateSnapOutputs);
     $("utility-expenses").addEventListener("input", updateHcvOutputs);
     $("utility-expenses").addEventListener("change", updateHcvOutputs);
+    $("utility-expenses").addEventListener("input", updateSnapOutputs);
+    $("utility-expenses").addEventListener("change", updateSnapOutputs);
 
     $("child-rows").addEventListener("change", updateChildCareSubsidyOutputs);
     $("child-rows").addEventListener("change", updateMedicaidOutputs);
@@ -927,6 +1028,7 @@
     $("adult-rows").addEventListener("change", updateMedicaidOutputs);
     $("adult-rows").addEventListener("input", updateHcvOutputs);
     $("adult-rows").addEventListener("change", updateHcvOutputs);
+    $("adult-rows").addEventListener("change", updateSnapOutputs);
     $("adult-rows").addEventListener("change", updateTanfOutputs);
     $("adult-rows").addEventListener("change", updateWicOutputs);
 
@@ -956,6 +1058,9 @@
     if (typeof HCV_BY_LOCALITY === "undefined") {
       console.warn("hcvLookupData.js missing — HCV outputs disabled.");
     }
+    if (typeof computeSnapV !== "function") {
+      console.warn("snap.js missing — SNAP outputs disabled.");
+    }
     if (typeof WIC_INCOME_LIMIT_BY_HH === "undefined") {
       console.warn("snapTanfWicLookupData.js missing — WIC outputs disabled.");
     }
@@ -980,6 +1085,7 @@
     updateEitcOutputs();
     updateMedicaidOutputs();
     updateHcvOutputs();
+    updateSnapOutputs();
     updateTanfOutputs();
     updateWicOutputs();
   }

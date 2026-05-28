@@ -111,21 +111,6 @@
     var rawPN = P - N;
     if (!(F < L2 && p.hcvSelected && rawPN > 0)) return 0;
 
-    var shelter = Math.max(0, Number(p.shelterMonthly) || 0);
-    if (shelter > 0) {
-      var utilAct = Math.max(0, Number(p.utilityMonthly) || 0);
-      var sua = Math.max(0, Number(p.snapUtilityAllowanceMonthly) || 0);
-      var comp = shelter + Math.max(utilAct, sua);
-      var mult =
-        Number(p.hcvRentIncomeMultiple) > 0 ? Number(p.hcvRentIncomeMultiple) : 1460 / 800;
-      var pad = Number(p.hcvGrossRentPad);
-      if (Number.isNaN(pad) || pad < 0) pad = 75;
-      var inner = Math.min(F * mult, Math.max(0, P - pad));
-      var gr = Math.min(P, Math.max(comp, inner) + 59 / 1000);
-      var capped = Math.min(rawPN, Math.max(0, gr - N));
-      return roundCents(capped);
-    }
-
     return roundCents(rawPN);
   }
 

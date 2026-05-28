@@ -49,7 +49,7 @@ const fn2 = new Function(
     ") };"
 );
 const r2 = fn2();
-const okHud209 = Math.abs(r2.q209 - 1266.06) < 0.01;
-const okHud211 = Math.abs(r2.q211 - 1026.06) < 0.01;
-console.log("shelter 500 + SNAP UA gross-rent cap", r2, okHud209 && okHud211 ? "OK" : "FAIL");
+const okHud209 = Math.abs(r2.q209 - 1341) < 0.01;
+const okHud211 = Math.abs(r2.q211 - 1101) < 0.01;
+console.log("workbook P-N only (shelter ignored)", r2, okHud209 && okHud211 ? "OK" : "FAIL");
 if (!okHud209 || !okHud211) process.exit(1);

@@ -151,6 +151,56 @@
                 value="0"
               />
             </div>
+            <div class="field">
+              <span class="label-like" id="adult-ssi-income-label"
+                >Is there SSI income (Adult)?</span
+              >
+              <div class="radio-row" role="group" aria-labelledby="adult-ssi-income-label">
+                <label><input type="radio" name="adult_ssi_income" value="yes" /> Yes</label>
+                <label><input type="radio" name="adult_ssi_income" value="no" checked /> No</label>
+              </div>
+            </div>
+            <div id="adult-ssi-panel" class="conditional-panel is-hidden" hidden>
+              <div class="field">
+                <label for="adult-ssi-parent-count"
+                  >How many disabled adults receiving SSI are also a parent to the child(ren)
+                  listed above?</label
+                >
+                <input
+                  type="number"
+                  id="adult-ssi-parent-count"
+                  name="adult_ssi_parent_count"
+                  min="0"
+                  max="20"
+                  step="1"
+                  value="0"
+                />
+              </div>
+              <div class="field">
+                <label for="adult-ssi-recipients">How many adults in the household receive SSI?</label>
+                <input
+                  type="number"
+                  id="adult-ssi-recipients"
+                  name="adult_ssi_recipients"
+                  min="0"
+                  max="20"
+                  step="1"
+                  value="0"
+                />
+              </div>
+              <div class="field">
+                <label for="adult-ssi-total-monthly">How much is the total adult SSI income?</label>
+                <input
+                  type="number"
+                  id="adult-ssi-total-monthly"
+                  name="adult_ssi_total_monthly"
+                  min="0"
+                  step="0.01"
+                  inputmode="decimal"
+                  placeholder="0"
+                />
+              </div>
+            </div>
           </div>
 
           <div class="field">
@@ -537,6 +587,18 @@
               <p class="output-note">Same as <strong>Housing Voucher!Q211</strong>.</p>
             </div>
             <div class="output-card">
+              <span class="output-label">SNAP (current)</span>
+              <span class="output-value" id="output-snap-current" aria-live="polite">—</span>
+              <p class="output-note">
+                Same as <strong>SNAP!V209</strong> (monthly $). Shown when SNAP is selected.
+              </p>
+            </div>
+            <div class="output-card">
+              <span class="output-label">SNAP (new income)</span>
+              <span class="output-value" id="output-snap-new" aria-live="polite">—</span>
+              <p class="output-note">Same as <strong>SNAP!V211</strong>.</p>
+            </div>
+            <div class="output-card">
               <span class="output-label">TANF (current)</span>
               <span class="output-value" id="output-tanf-max-current" aria-live="polite">—</span>
               <p class="output-note">
@@ -599,6 +661,7 @@
         <script src="hcvLookupData.js"></script>
         <script src="hcv.js"></script>
         <script src="snapTanfWicLookupData.js"></script>
+        <script src="snap.js"></script>
         <script src="tanfView.js"></script>
         <script src="wic.js"></script>
         <script src="app.js"></script>
