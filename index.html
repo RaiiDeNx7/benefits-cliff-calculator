@@ -8,8 +8,15 @@
   </head>
   <body>
     <header class="page-header">
-      <h1>Benefits Cliff Calculator</h1>
-      <p class="lede">Enter household information. Totals update as you type.</p>
+      <div class="page-header-inner">
+        <div class="page-header-row">
+          <div class="page-header-text">
+            <h1>Benefits Cliff Calculator</h1>
+            <p class="lede">Enter household information. Totals update as you type.</p>
+          </div>
+          <button type="button" id="reset-form" class="btn-reset">Reset all inputs</button>
+        </div>
+      </div>
     </header>
 
     <main class="layout">
@@ -46,7 +53,7 @@
 
         <fieldset class="section">
           <legend>3. Household size</legend>
-          <div class="field-row">
+          <div class="field-row field-row--household">
             <div class="field">
               <label for="num-adults">Number of adults in household</label>
               <input
@@ -329,7 +336,7 @@
             Do not count income of the elderly, disabled adult, or spouse when excluded by program
             rules.
           </p>
-          <div class="field-row">
+          <div class="field-row field-row--two">
             <div class="field">
               <label for="parent-yes-current">Current all-adult monthly earned income ($)</label>
               <input
@@ -390,7 +397,7 @@
             Do not count income of the elderly, disabled adult, or spouse when excluded by program
             rules.
           </p>
-          <div class="field-row">
+          <div class="field-row field-row--two">
             <div class="field">
               <label for="parent-no-current">Current all-adult monthly earned income ($)</label>
               <input
@@ -503,146 +510,98 @@
             <div class="output-card">
               <span class="output-label">Total household income</span>
               <span class="output-value" id="output-total-current" aria-live="polite">$0</span>
-              <p class="output-note">
-                Sum of current monthly earned income (parents yes + parents no), each dollar amount
-                rounded up.
-              </p>
             </div>
             <div class="output-card">
               <span class="output-label">New total household income</span>
               <span class="output-value" id="output-total-new" aria-live="polite">$0</span>
-              <p class="output-note">
-                Sum of new monthly earned income (parents yes + parents no), each dollar amount
-                rounded up.
-              </p>
+            </div>
+            <div class="output-card output-card--summary">
+              <span class="output-label">Current monthly selected benefits</span>
+              <span class="output-value" id="output-benefits-total-current" aria-live="polite">$0.00</span>
+            </div>
+            <div class="output-card output-card--summary">
+              <span class="output-label">New monthly selected benefits</span>
+              <span class="output-value" id="output-benefits-total-new" aria-live="polite">$0.00</span>
+            </div>
+            <div class="output-card output-card--summary">
+              <span class="output-label">Current overall resources</span>
+              <span class="output-value" id="output-resources-current" aria-live="polite">$0.00</span>
+            </div>
+            <div class="output-card output-card--summary">
+              <span class="output-label">New overall resources</span>
+              <span class="output-value" id="output-resources-new" aria-live="polite">$0.00</span>
             </div>
             <div class="output-card">
               <span class="output-label">Child care subsidy (current)</span>
               <span class="output-value" id="output-cc-subsidy-current" aria-live="polite">—</span>
-              <p class="output-note">
-                Same logic as <strong>Child care subsidy</strong> sheet <strong>S208</strong> (monthly
-                $). Shown when Child Care Subsidy is selected.
-              </p>
             </div>
             <div class="output-card">
               <span class="output-label">Child care subsidy (new income)</span>
               <span class="output-value" id="output-cc-subsidy-new" aria-live="polite">—</span>
-              <p class="output-note">
-                Same logic as <strong>S210</strong>. Uses new monthly earned totals (B91 path).
-              </p>
             </div>
             <div class="output-card">
               <span class="output-label">EITC + VA (current, monthly)</span>
               <span class="output-value output-value--eitc" id="output-eitc-current" aria-live="polite">—</span>
-              <p class="output-note">
-                Same as <strong>EITC!E208/12</strong> (federal + 15% VA on rows 208–210). Shown when EITC
-                is selected.
-              </p>
             </div>
             <div class="output-card">
               <span class="output-label">EITC + VA (new income, monthly)</span>
               <span class="output-value output-value--eitc" id="output-eitc-new" aria-live="polite">—</span>
-              <p class="output-note">Same as <strong>EITC!E210/12</strong>.</p>
             </div>
             <div class="output-card">
               <span class="output-label">Marketplace subsidy (current)</span>
               <span class="output-value" id="output-marketplace-current" aria-live="polite">—</span>
-              <p class="output-note">
-                Same as <strong>Health insurance subsidy L220</strong> (monthly $). Shown when Marketplace
-                subsidies are selected. Uses adult ages (up to 8) and locality for SLCSP totals like the
-                workbook.
-              </p>
             </div>
             <div class="output-card">
               <span class="output-label">Marketplace subsidy (new income)</span>
               <span class="output-value" id="output-marketplace-new" aria-live="polite">—</span>
-              <p class="output-note">Same as <strong>L222</strong>.</p>
             </div>
             <div class="output-card">
               <span class="output-label">Medicaid (current)</span>
               <span class="output-value" id="output-medicaid-current" aria-live="polite">—</span>
-              <p class="output-note">
-                Same as <strong>Medicaid!N212</strong> (monthly $). Shown when Medicaid is selected.
-                Uses L212+M212: earned income minus work disregard vs J2/L2 limits and adult/child spend
-                rates (Program C148/C152).
-              </p>
             </div>
             <div class="output-card">
               <span class="output-label">Medicaid (new income)</span>
               <span class="output-value" id="output-medicaid-new" aria-live="polite">—</span>
-              <p class="output-note">Same as <strong>Medicaid!N214</strong> (L214+M214).</p>
             </div>
             <div class="output-card">
               <span class="output-label">HCV program (current)</span>
               <span class="output-value" id="output-hcv-current" aria-live="polite">—</span>
-              <p class="output-note">
-                Same as <strong>Housing Voucher!Q209</strong> (monthly $). Shown when Housing Choice
-                Voucher is selected. Uses locality, household size, adult ages, bedrooms, earned income,
-                optional TANF and Social Security fields.
-              </p>
             </div>
             <div class="output-card">
               <span class="output-label">HCV program (new income)</span>
               <span class="output-value" id="output-hcv-new" aria-live="polite">—</span>
-              <p class="output-note">Same as <strong>Housing Voucher!Q211</strong>.</p>
             </div>
             <div class="output-card">
               <span class="output-label">SNAP (current)</span>
               <span class="output-value" id="output-snap-current" aria-live="polite">—</span>
-              <p class="output-note">
-                Same as <strong>SNAP!V209</strong> (monthly $). Shown when SNAP is selected.
-              </p>
             </div>
             <div class="output-card">
               <span class="output-label">SNAP (new income)</span>
               <span class="output-value" id="output-snap-new" aria-live="polite">—</span>
-              <p class="output-note">Same as <strong>SNAP!V211</strong>.</p>
             </div>
             <div class="output-card">
               <span class="output-label">TANF (current)</span>
               <span class="output-value" id="output-tanf-max-current" aria-live="polite">—</span>
-              <p class="output-note">
-                Same as <strong>MAX('TANF-VIEW'!L212,'TANF-VIEW'!T212)</strong> (monthly $). Shown when
-                TANF is selected. Uses locality, earned income, and Social Security.
-              </p>
             </div>
             <div class="output-card">
               <span class="output-label">TANF (new income)</span>
               <span class="output-value" id="output-tanf-max-new" aria-live="polite">—</span>
-              <p class="output-note">
-                Same as <strong>MAX('TANF-VIEW'!L214,'TANF-VIEW'!T214)</strong>. Row 214 still uses
-                <strong>current</strong> packaged monthly earned on the TANF B column (workbook B90), same
-                as row 212.
-              </p>
             </div>
             <div class="output-card">
               <span class="output-label">TANF/VIEW (current)</span>
               <span class="output-value" id="output-tanf-view-t-current" aria-live="polite">—</span>
-              <p class="output-note">
-                Same as <strong>'TANF-VIEW'!T212</strong> (monthly $). Shown when TANF/VIEW is selected.
-              </p>
             </div>
             <div class="output-card">
               <span class="output-label">TANF/VIEW (new income)</span>
               <span class="output-value" id="output-tanf-view-t-new" aria-live="polite">—</span>
-              <p class="output-note">
-                Same as <strong>'TANF-VIEW'!T214</strong>. Row 214 uses current packaged earned (B90) on
-                the TANF B column, same as T212.
-              </p>
             </div>
             <div class="output-card">
               <span class="output-label">WIC (current)</span>
               <span class="output-value" id="output-wic-current" aria-live="polite">—</span>
-              <p class="output-note">
-                Same as <strong>WIC!F211</strong> (monthly $). Shown when WIC is selected. Counts
-                children in infant through preschool bands; income test includes earned income, Social
-                Security, and MAX(TANF-VIEW L,T).
-              </p>
             </div>
             <div class="output-card">
               <span class="output-label">WIC (new income)</span>
               <span class="output-value" id="output-wic-new" aria-live="polite">—</span>
-              <p class="output-note">Same as <strong>WIC!F213</strong>. Uses new monthly earned for B213.</p>
             </div>
           </div>
         </section>

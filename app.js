@@ -3,6 +3,30 @@
 
   const COUNT_MAX = 20;
 
+  const BENEFIT_OUTPUT_IDS_CURRENT = [
+    "output-cc-subsidy-current",
+    "output-eitc-current",
+    "output-marketplace-current",
+    "output-medicaid-current",
+    "output-hcv-current",
+    "output-snap-current",
+    "output-tanf-max-current",
+    "output-tanf-view-t-current",
+    "output-wic-current",
+  ];
+
+  const BENEFIT_OUTPUT_IDS_NEW = [
+    "output-cc-subsidy-new",
+    "output-eitc-new",
+    "output-marketplace-new",
+    "output-medicaid-new",
+    "output-hcv-new",
+    "output-snap-new",
+    "output-tanf-max-new",
+    "output-tanf-view-t-new",
+    "output-wic-new",
+  ];
+
   /** @param {string} id */
   function $(id) {
     const el = document.getElementById(id);
@@ -115,6 +139,7 @@
     updateSnapOutputs();
     updateTanfOutputs();
     updateWicOutputs();
+    updateAggregateOutputs();
   }
 
   function snapUtilityStandardMonthly(householdSize) {
@@ -129,6 +154,16 @@
       currency: "USD",
       minimumFractionDigits: 0,
       maximumFractionDigits: 0,
+    }).format(amount);
+  }
+
+  /** Summary totals: exact cents (no rounding to whole dollars). */
+  function formatAggregateAmount(amount) {
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
     }).format(amount);
   }
 
@@ -338,6 +373,48 @@
     return Math.ceil(yn) + Math.ceil(nn);
   }
 
+  /** Exact earned income for aggregate resources (no ceil). */
+  function monthlyEarnedCurrentExact() {
+    const yc = parseNonNegativeNumber($("parent-yes-current").value);
+    const nc = parseNonNegativeNumber($("parent-no-current").value);
+    return yc + nc;
+  }
+
+  function monthlyEarnedNewExact() {
+    const yn = parseNonNegativeNumber($("parent-yes-new").value);
+    const nn = parseNonNegativeNumber($("parent-no-new").value);
+    return yn + nn;
+  }
+
+  function parseDisplayedCurrency(text) {
+    const t = String(text).trim();
+    if (!t || t === "\u2014" || t === "—") return 0;
+    const n = parseFloat(t.replace(/[^0-9.-]/g, ""));
+    return Number.isNaN(n) ? 0 : n;
+  }
+
+  function sumBenefitOutputs(ids) {
+    let sum = 0;
+    for (let i = 0; i < ids.length; i++) {
+      const el = document.getElementById(ids[i]);
+      if (el) sum += parseDisplayedCurrency(el.textContent);
+    }
+    return sum;
+  }
+
+  function updateAggregateOutputs() {
+    const benefitsCur = sumBenefitOutputs(BENEFIT_OUTPUT_IDS_CURRENT);
+    const benefitsNew = sumBenefitOutputs(BENEFIT_OUTPUT_IDS_NEW);
+    const incomeCur = monthlyEarnedCurrentExact();
+    const incomeNew = monthlyEarnedNewExact();
+    $("output-benefits-total-current").textContent = formatAggregateAmount(benefitsCur);
+    $("output-benefits-total-new").textContent = formatAggregateAmount(benefitsNew);
+    $("output-resources-current").textContent = formatAggregateAmount(
+      benefitsCur + incomeCur
+    );
+    $("output-resources-new").textContent = formatAggregateAmount(benefitsNew + incomeNew);
+  }
+
   function updateHcvPanel() {
     const hcv = getHcvCheckbox();
     const panel = $("hcv-panel");
@@ -505,6 +582,7 @@
     updateSnapOutputs();
     updateTanfOutputs();
     updateWicOutputs();
+    updateAggregateOutputs();
   }
 
   function updateUtilityFieldState() {
@@ -523,6 +601,7 @@
     }
     updateHcvOutputs();
     updateSnapOutputs();
+    updateAggregateOutputs();
   }
 
   function updateIncomeTotals() {
@@ -539,11 +618,14 @@
     updateMarketplaceOutputs();
     updateMedicaidOutputs();
     updateHcvOutputs();
+    updateSnapOutputs();
     updateTanfOutputs();
     updateWicOutputs();
+    updateAggregateOutputs();
   }
 
   function updateChildCareSubsidyOutputs() {
+    try {
     const outCur = $("output-cc-subsidy-current");
     const outNew = $("output-cc-subsidy-new");
     const ccCb = getChildCareSubsidyCheckbox();
@@ -588,9 +670,13 @@
 
     outCur.textContent = formatCurrency(Math.max(0, cur));
     outNew.textContent = formatCurrency(Math.max(0, neu));
+    } finally {
+      updateAggregateOutputs();
+    }
   }
 
   function updateEitcOutputs() {
+    try {
     const outCur = $("output-eitc-current");
     const outNew = $("output-eitc-new");
     const eitcCb = getEitcCheckbox();
@@ -622,9 +708,13 @@
 
     outCur.textContent = formatEitcMonthly(Math.max(0, cur));
     outNew.textContent = formatEitcMonthly(Math.max(0, neu));
+    } finally {
+      updateAggregateOutputs();
+    }
   }
 
   function updateMarketplaceOutputs() {
+    try {
     const outCur = $("output-marketplace-current");
     const outNew = $("output-marketplace-new");
     const mpCb = getMarketplaceCheckbox();
@@ -658,9 +748,13 @@
 
     outCur.textContent = formatCurrency(Math.max(0, cur));
     outNew.textContent = formatCurrency(Math.max(0, neu));
+    } finally {
+      updateAggregateOutputs();
+    }
   }
 
   function updateMedicaidOutputs() {
+    try {
     const outCur = $("output-medicaid-current");
     const outNew = $("output-medicaid-new");
     const mcCb = getMedicaidCheckbox();
@@ -694,9 +788,13 @@
 
     outCur.textContent = formatMedicaidMonthly(Math.max(0, cur));
     outNew.textContent = formatMedicaidMonthly(Math.max(0, neu));
+    } finally {
+      updateAggregateOutputs();
+    }
   }
 
   function updateHcvOutputs() {
+    try {
     const outCur = $("output-hcv-current");
     const outNew = $("output-hcv-new");
     const hcvCb = getHcvCheckbox();
@@ -760,9 +858,13 @@
 
     outCur.textContent = formatHcvMonthly(Math.max(0, cur));
     outNew.textContent = formatHcvMonthly(Math.max(0, neu));
+    } finally {
+      updateAggregateOutputs();
+    }
   }
 
   function updateSnapOutputs() {
+    try {
     const outCur = $("output-snap-current");
     const outNew = $("output-snap-new");
     const snapCb = getSnapCheckbox();
@@ -814,9 +916,13 @@
 
     outCur.textContent = formatCurrency(Math.max(0, cur));
     outNew.textContent = formatCurrency(Math.max(0, neu));
+    } finally {
+      updateAggregateOutputs();
+    }
   }
 
   function updateTanfOutputs() {
+    try {
     const outMaxCur = $("output-tanf-max-current");
     const outMaxNew = $("output-tanf-max-new");
     const outViewTCur = $("output-tanf-view-t-current");
@@ -856,9 +962,13 @@
       outViewTCur.textContent = "—";
       outViewTNew.textContent = "—";
     }
+    } finally {
+      updateAggregateOutputs();
+    }
   }
 
   function updateWicOutputs() {
+    try {
     const outCur = $("output-wic-current");
     const outNew = $("output-wic-new");
     const wicCb = getWicCheckbox();
@@ -905,9 +1015,38 @@
 
     outCur.textContent = formatMedicaidMonthly(Math.max(0, wicCur));
     outNew.textContent = formatMedicaidMonthly(Math.max(0, wicNeu));
+    } finally {
+      updateAggregateOutputs();
+    }
+  }
+
+  function refreshCalculatorAfterInputChange() {
+    updateDisabilityPanels();
+    updateParentSsPanels();
+    updateHcvPanel();
+    syncCountInputs();
+    onHouseholdCountChange();
+    updateUtilityFieldState();
+    updateIncomeTotals();
+    updateEitcTaxWarning();
+  }
+
+  function resetFormToDefaults() {
+    $("calculator-form").reset();
+    $("benefits-checkboxes")
+      .querySelectorAll('input[type="checkbox"]')
+      .forEach(function (cb) {
+        if (cb instanceof HTMLInputElement) cb.checked = false;
+      });
+    refreshCalculatorAfterInputChange();
   }
 
   function bindFormListeners() {
+    const resetBtn = document.getElementById("reset-form");
+    if (resetBtn) {
+      resetBtn.addEventListener("click", resetFormToDefaults);
+    }
+
     $("num-adults").addEventListener("input", onHouseholdCountChange);
     $("num-adults").addEventListener("change", onHouseholdCountChange);
     $("num-children").addEventListener("input", onHouseholdCountChange);
@@ -1028,6 +1167,7 @@
     $("adult-rows").addEventListener("change", updateMedicaidOutputs);
     $("adult-rows").addEventListener("input", updateHcvOutputs);
     $("adult-rows").addEventListener("change", updateHcvOutputs);
+    $("adult-rows").addEventListener("input", updateSnapOutputs);
     $("adult-rows").addEventListener("change", updateSnapOutputs);
     $("adult-rows").addEventListener("change", updateTanfOutputs);
     $("adult-rows").addEventListener("change", updateWicOutputs);
@@ -1073,21 +1213,7 @@
     initLocalitySelect();
     initBenefitCheckboxes();
     bindFormListeners();
-    updateDisabilityPanels();
-    updateParentSsPanels();
-    updateHcvPanel();
-    syncCountInputs();
-    onHouseholdCountChange();
-    updateUtilityFieldState();
-    updateIncomeTotals();
-    updateEitcTaxWarning();
-    updateChildCareSubsidyOutputs();
-    updateEitcOutputs();
-    updateMedicaidOutputs();
-    updateHcvOutputs();
-    updateSnapOutputs();
-    updateTanfOutputs();
-    updateWicOutputs();
+    refreshCalculatorAfterInputChange();
   }
 
   if (document.readyState === "loading") {

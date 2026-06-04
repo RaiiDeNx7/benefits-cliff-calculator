@@ -1,0 +1,917 @@
+{
+  "runAt": "2026-06-01T00:47:02.621Z",
+  "total": 31,
+  "passed": 31,
+  "failed": 0,
+  "results": [
+    {
+      "id": "TC-A1",
+      "pass": true,
+      "details": [
+        {
+          "row": "current",
+          "field": "totalIncome",
+          "pass": true,
+          "note": "OK",
+          "actual": 500,
+          "expected": 500,
+          "source": "app"
+        },
+        {
+          "row": "current",
+          "field": "childCare",
+          "pass": true,
+          "note": "OK",
+          "actual": 2675,
+          "expected": 2675,
+          "source": "app"
+        },
+        {
+          "row": "current",
+          "field": "eitc",
+          "pass": true,
+          "note": "OK",
+          "actual": 258.75,
+          "expected": 258.75,
+          "source": "app"
+        },
+        {
+          "row": "current",
+          "field": "marketplace",
+          "pass": true,
+          "note": "OK",
+          "actual": 0,
+          "expected": 0,
+          "source": "app"
+        },
+        {
+          "row": "current",
+          "field": "hcv",
+          "pass": true,
+          "note": "OK",
+          "actual": 1284.06,
+          "expected": 1284.06,
+          "source": "app"
+        },
+        {
+          "row": "current",
+          "field": "medicaid",
+          "pass": true,
+          "note": "OK",
+          "actual": 3024.5,
+          "expected": 3024.5,
+          "source": "app"
+        },
+        {
+          "row": "current",
+          "field": "snap",
+          "pass": true,
+          "note": "OK",
+          "actual": 1557,
+          "expected": 1557,
+          "source": "app"
+        },
+        {
+          "row": "current",
+          "field": "tanfMax",
+          "pass": true,
+          "note": "OK",
+          "actual": 489.8,
+          "expected": 489.8,
+          "source": "app"
+        },
+        {
+          "row": "current",
+          "field": "wic",
+          "pass": true,
+          "note": "OK",
+          "actual": 73.52,
+          "expected": 73.52,
+          "source": "app"
+        },
+        {
+          "row": "new",
+          "field": "totalIncome",
+          "pass": true,
+          "note": "OK",
+          "actual": 1000,
+          "expected": 1000,
+          "source": "app"
+        },
+        {
+          "row": "new",
+          "field": "childCare",
+          "pass": true,
+          "note": "OK",
+          "actual": 2655,
+          "expected": 2655,
+          "source": "app"
+        },
+        {
+          "row": "new",
+          "field": "eitc",
+          "pass": true,
+          "note": "OK",
+          "actual": 517.5,
+          "expected": 517.5,
+          "source": "app"
+        },
+        {
+          "row": "new",
+          "field": "marketplace",
+          "pass": true,
+          "note": "OK",
+          "actual": 0,
+          "expected": 0,
+          "source": "app"
+        },
+        {
+          "row": "new",
+          "field": "hcv",
+          "pass": true,
+          "note": "OK",
+          "actual": 1134.06,
+          "expected": 1134.06,
+          "source": "app"
+        },
+        {
+          "row": "new",
+          "field": "medicaid",
+          "pass": true,
+          "note": "OK",
+          "actual": 3024.5,
+          "expected": 3024.5,
+          "source": "app"
+        },
+        {
+          "row": "new",
+          "field": "snap",
+          "pass": true,
+          "note": "OK",
+          "actual": 1377,
+          "expected": 1377,
+          "source": "app"
+        },
+        {
+          "row": "new",
+          "field": "tanfMax",
+          "pass": true,
+          "note": "OK",
+          "actual": 489.8,
+          "expected": 489.8,
+          "source": "app"
+        },
+        {
+          "row": "new",
+          "field": "wic",
+          "pass": true,
+          "note": "OK",
+          "actual": 73.52,
+          "expected": 73.52,
+          "source": "app"
+        }
+      ],
+      "note": null
+    },
+    {
+      "id": "TC-A2",
+      "pass": true,
+      "details": [
+        {
+          "row": "current",
+          "field": "totalIncome",
+          "pass": true,
+          "note": "OK",
+          "actual": 500,
+          "expected": 500,
+          "source": "app"
+        },
+        {
+          "row": "current",
+          "field": "tanfMax",
+          "pass": true,
+          "note": "OK",
+          "actual": 489.8,
+          "expected": 489.8,
+          "source": "app"
+        },
+        {
+          "row": "new",
+          "field": "totalIncome",
+          "pass": true,
+          "note": "OK",
+          "actual": 500,
+          "expected": 500,
+          "source": "app"
+        },
+        {
+          "row": "new",
+          "field": "tanfMax",
+          "pass": true,
+          "note": "OK",
+          "actual": 489.8,
+          "expected": 489.8,
+          "source": "app"
+        },
+        {
+          "row": "parity",
+          "field": "totalIncome",
+          "pass": true,
+          "note": "current=new OK"
+        },
+        {
+          "row": "parity",
+          "field": "tanfMax",
+          "pass": true,
+          "note": "current=new OK"
+        }
+      ],
+      "note": null
+    },
+    {
+      "id": "TC-B1",
+      "pass": true,
+      "details": [
+        {
+          "row": "current",
+          "field": "totalIncome",
+          "pass": true,
+          "note": "OK",
+          "actual": 1423,
+          "expected": 1423,
+          "source": "app"
+        },
+        {
+          "row": "current",
+          "field": "childCare",
+          "pass": true,
+          "note": "OK",
+          "actual": 1400,
+          "expected": 1400,
+          "source": "app"
+        },
+        {
+          "row": "current",
+          "field": "eitc",
+          "pass": true,
+          "note": "OK",
+          "actual": 654.58,
+          "expected": 654.58,
+          "source": "app"
+        }
+      ],
+      "note": null
+    },
+    {
+      "id": "TC-B4",
+      "pass": true,
+      "details": [
+        {
+          "row": "current",
+          "field": "childCare",
+          "pass": true,
+          "note": "OK",
+          "actual": 2675,
+          "expected": 2675,
+          "source": "workbook"
+        },
+        {
+          "row": "current",
+          "field": "eitc",
+          "pass": true,
+          "note": "OK",
+          "actual": 258.75,
+          "expected": 258.75,
+          "source": "workbook"
+        },
+        {
+          "row": "current",
+          "field": "hcv",
+          "pass": false,
+          "note": "got 1174, expected 1217.379",
+          "actual": 1174,
+          "expected": 1217.379,
+          "source": "workbook"
+        },
+        {
+          "row": "current",
+          "field": "snap",
+          "pass": false,
+          "note": "got 1360, expected 1224",
+          "actual": 1360,
+          "expected": 1224,
+          "source": "workbook"
+        },
+        {
+          "row": "current",
+          "field": "tanfMax",
+          "pass": false,
+          "note": "got 0, expected 355.4",
+          "actual": 0,
+          "expected": 355.4,
+          "source": "workbook"
+        },
+        {
+          "row": "current",
+          "field": "wic",
+          "pass": true,
+          "note": "OK",
+          "actual": 73.52,
+          "expected": 73.52,
+          "source": "workbook"
+        },
+        {
+          "row": "current",
+          "field": "childCare",
+          "pass": true,
+          "note": "OK",
+          "actual": 2675,
+          "expected": 2675,
+          "source": "app"
+        },
+        {
+          "row": "current",
+          "field": "eitc",
+          "pass": true,
+          "note": "OK",
+          "actual": 258.75,
+          "expected": 258.75,
+          "source": "app"
+        },
+        {
+          "row": "current",
+          "field": "marketplace",
+          "pass": true,
+          "note": "OK",
+          "actual": 0,
+          "expected": 0,
+          "source": "app"
+        },
+        {
+          "row": "current",
+          "field": "medicaid",
+          "pass": true,
+          "note": "OK",
+          "actual": 3024.5,
+          "expected": 3024.5,
+          "source": "app"
+        },
+        {
+          "row": "current",
+          "field": "wic",
+          "pass": true,
+          "note": "OK",
+          "actual": 73.52,
+          "expected": 73.52,
+          "source": "app"
+        },
+        {
+          "row": "current",
+          "field": "tanfMax",
+          "pass": true,
+          "note": "OK",
+          "actual": 0,
+          "expected": 0,
+          "source": "app"
+        },
+        {
+          "row": "current",
+          "field": "hcv",
+          "pass": true,
+          "note": "OK",
+          "actual": 1174,
+          "expected": 1174,
+          "source": "app"
+        },
+        {
+          "row": "current",
+          "field": "snap",
+          "pass": true,
+          "note": "OK",
+          "actual": 1360,
+          "expected": 1360,
+          "source": "app"
+        }
+      ],
+      "note": null,
+      "workbookDelta": true
+    },
+    {
+      "id": "TC-B7",
+      "pass": true,
+      "details": [
+        {
+          "row": "current",
+          "field": "wic",
+          "pass": true,
+          "note": "OK",
+          "actual": 0,
+          "expected": 0,
+          "source": "app"
+        }
+      ],
+      "note": null
+    },
+    {
+      "id": "TC-C2",
+      "pass": true,
+      "details": [
+        {
+          "row": "current",
+          "field": "childCare",
+          "pass": true,
+          "note": "OK",
+          "actual": 0,
+          "expected": 0,
+          "source": "app"
+        }
+      ],
+      "note": null
+    },
+    {
+      "id": "TC-E1",
+      "pass": true,
+      "details": [
+        {
+          "row": "current",
+          "field": "eitc",
+          "pass": true,
+          "note": "OK",
+          "actual": 258.75,
+          "expected": 258.75,
+          "source": "app"
+        },
+        {
+          "row": "new",
+          "field": "eitc",
+          "pass": true,
+          "note": "OK",
+          "actual": 517.5,
+          "expected": 517.5,
+          "source": "app"
+        }
+      ],
+      "note": null
+    },
+    {
+      "id": "TC-E3",
+      "pass": true,
+      "details": [
+        {
+          "row": "current",
+          "field": "eitc",
+          "pass": true,
+          "note": "OK",
+          "actual": 0,
+          "expected": 0,
+          "source": "app"
+        }
+      ],
+      "note": null
+    },
+    {
+      "id": "TC-M1",
+      "pass": true,
+      "details": [
+        {
+          "row": "current",
+          "field": "marketplace",
+          "pass": true,
+          "note": "OK",
+          "actual": 0,
+          "expected": 0,
+          "source": "app"
+        }
+      ],
+      "note": null
+    },
+    {
+      "id": "TC-M2",
+      "pass": true,
+      "details": [
+        {
+          "row": "current",
+          "field": "marketplace",
+          "pass": true,
+          "note": "OK",
+          "actual": 889,
+          "expected": 889,
+          "source": "app"
+        }
+      ],
+      "note": null
+    },
+    {
+      "id": "TC-MD2",
+      "pass": true,
+      "details": [
+        {
+          "row": "current",
+          "field": "medicaid",
+          "pass": true,
+          "note": "OK",
+          "actual": 0,
+          "expected": 0,
+          "source": "app"
+        }
+      ],
+      "note": null
+    },
+    {
+      "id": "TC-H3",
+      "pass": true,
+      "details": [
+        {
+          "row": "current",
+          "field": "hcv",
+          "pass": true,
+          "note": "OK",
+          "actual": 0,
+          "expected": 0,
+          "source": "app"
+        }
+      ],
+      "note": null
+    },
+    {
+      "id": "TC-T3",
+      "pass": true,
+      "details": [
+        {
+          "row": "current",
+          "field": "tanfMax",
+          "pass": true,
+          "note": "OK",
+          "actual": 262,
+          "expected": 262,
+          "source": "app"
+        }
+      ],
+      "note": "App pays TANF SOA when gross=0 even with parentYesCount=0 (workbook may differ)"
+    },
+    {
+      "id": "TC-W2",
+      "pass": true,
+      "details": [
+        {
+          "row": "current",
+          "field": "wic",
+          "pass": true,
+          "note": "OK",
+          "actual": 0,
+          "expected": 0,
+          "source": "app"
+        }
+      ],
+      "note": null
+    },
+    {
+      "id": "TC-CL1",
+      "pass": true,
+      "details": [
+        {
+          "field": "eitc",
+          "pass": true,
+          "note": "cur/new differ as expected"
+        },
+        {
+          "field": "tanfMax",
+          "pass": true,
+          "note": "cur/new same as expected"
+        }
+      ],
+      "note": null
+    },
+    {
+      "id": "TC-S2-SUA",
+      "pass": true,
+      "details": [
+        {
+          "field": "snap",
+          "pass": true,
+          "note": "differs from base",
+          "actual": 1571,
+          "baseline": 1557
+        }
+      ],
+      "note": null
+    },
+    {
+      "id": "TC-U5-rounding",
+      "pass": true,
+      "details": [
+        {
+          "field": "totalIncomeRounding",
+          "pass": true,
+          "note": "ceil OK: 1424"
+        }
+      ],
+      "note": null
+    },
+    {
+      "id": "TC-B2",
+      "pass": true,
+      "details": [
+        {
+          "row": "current",
+          "field": "eitc",
+          "pass": true,
+          "note": "OK",
+          "actual": 424.25416666666666,
+          "expected": 424.25416666666666,
+          "source": "workbook"
+        },
+        {
+          "row": "current",
+          "field": "childCare",
+          "pass": true,
+          "note": "OK",
+          "actual": 555,
+          "expected": 555,
+          "source": "app"
+        },
+        {
+          "row": "current",
+          "field": "totalIncome",
+          "pass": true,
+          "note": "OK",
+          "actual": 1213,
+          "expected": 1213,
+          "source": "app"
+        }
+      ],
+      "note": null,
+      "workbookDelta": false
+    },
+    {
+      "id": "TC-B5",
+      "pass": true,
+      "details": [
+        {
+          "row": "current",
+          "field": "eitc",
+          "pass": true,
+          "note": "OK",
+          "actual": 402.73,
+          "expected": 402.73,
+          "source": "workbook"
+        },
+        {
+          "row": "current",
+          "field": "childCare",
+          "pass": true,
+          "note": "OK",
+          "actual": 1275,
+          "expected": 1275,
+          "source": "app"
+        },
+        {
+          "row": "current",
+          "field": "totalIncome",
+          "pass": true,
+          "note": "OK",
+          "actual": 1030,
+          "expected": 1030,
+          "source": "app"
+        }
+      ],
+      "note": null,
+      "workbookDelta": false
+    },
+    {
+      "id": "TC-B6",
+      "pass": true,
+      "details": [
+        {
+          "row": "current",
+          "field": "childCare",
+          "pass": true,
+          "note": "OK",
+          "actual": 2041.55,
+          "expected": 2041.55,
+          "source": "workbook"
+        },
+        {
+          "row": "current",
+          "field": "hcv",
+          "pass": false,
+          "note": "got 770.24, expected 1097.1",
+          "actual": 770.24,
+          "expected": 1097.1,
+          "source": "workbook"
+        },
+        {
+          "row": "current",
+          "field": "totalIncome",
+          "pass": true,
+          "note": "OK",
+          "actual": 369,
+          "expected": 369,
+          "source": "app"
+        },
+        {
+          "row": "current",
+          "field": "wic",
+          "pass": true,
+          "note": "OK",
+          "actual": 73.52,
+          "expected": 73.52,
+          "source": "app"
+        }
+      ],
+      "note": null,
+      "workbookDelta": true
+    },
+    {
+      "id": "TC-C1",
+      "pass": true,
+      "details": [
+        {
+          "field": "childCare",
+          "pass": true,
+          "note": "non-zero OK",
+          "actual": 555
+        }
+      ],
+      "note": "TANF path (cc_tanf_l) plus school_age band yields subsidy"
+    },
+    {
+      "id": "TC-C3-teen",
+      "pass": true,
+      "details": [
+        {
+          "row": "current",
+          "field": "childCare",
+          "pass": true,
+          "note": "OK",
+          "actual": 0,
+          "expected": 0,
+          "source": "app"
+        }
+      ],
+      "note": null
+    },
+    {
+      "id": "TC-MD1",
+      "pass": true,
+      "details": [
+        {
+          "row": "current",
+          "field": "medicaid",
+          "pass": true,
+          "note": "OK",
+          "actual": 3024.5,
+          "expected": 3024.5,
+          "source": "app"
+        },
+        {
+          "row": "new",
+          "field": "medicaid",
+          "pass": true,
+          "note": "OK",
+          "actual": 3024.5,
+          "expected": 3024.5,
+          "source": "app"
+        }
+      ],
+      "note": null
+    },
+    {
+      "id": "TC-H1",
+      "pass": true,
+      "details": [
+        {
+          "row": "current",
+          "field": "hcv",
+          "pass": true,
+          "note": "OK",
+          "actual": 1284.06,
+          "expected": 1284.06,
+          "source": "app"
+        }
+      ],
+      "note": null
+    },
+    {
+      "id": "TC-S1",
+      "pass": true,
+      "details": [
+        {
+          "row": "current",
+          "field": "snap",
+          "pass": true,
+          "note": "OK",
+          "actual": 1557,
+          "expected": 1557,
+          "source": "app"
+        },
+        {
+          "row": "new",
+          "field": "snap",
+          "pass": true,
+          "note": "OK",
+          "actual": 1377,
+          "expected": 1377,
+          "source": "app"
+        }
+      ],
+      "note": null
+    },
+    {
+      "id": "TC-T1",
+      "pass": true,
+      "details": [
+        {
+          "row": "current",
+          "field": "tanfMax",
+          "pass": true,
+          "note": "OK",
+          "actual": 489.8,
+          "expected": 489.8,
+          "source": "app"
+        },
+        {
+          "row": "new",
+          "field": "tanfMax",
+          "pass": true,
+          "note": "OK",
+          "actual": 489.8,
+          "expected": 489.8,
+          "source": "app"
+        }
+      ],
+      "note": null
+    },
+    {
+      "id": "TC-W1",
+      "pass": true,
+      "details": [
+        {
+          "row": "current",
+          "field": "wic",
+          "pass": true,
+          "note": "OK",
+          "actual": 73.52,
+          "expected": 73.52,
+          "source": "app"
+        }
+      ],
+      "note": null
+    },
+    {
+      "id": "TC-CL3",
+      "pass": true,
+      "details": [
+        {
+          "field": "marketplace",
+          "pass": true,
+          "note": "cur/new differ OK"
+        },
+        {
+          "field": "medicaid",
+          "pass": true,
+          "note": "cur/new differ OK"
+        }
+      ],
+      "note": null
+    },
+    {
+      "id": "TC-CL4",
+      "pass": true,
+      "details": [
+        {
+          "field": "totalIncome",
+          "pass": true,
+          "note": "cur/new differ OK"
+        }
+      ],
+      "note": null
+    },
+    {
+      "id": "TC-E2",
+      "pass": true,
+      "details": [
+        {
+          "field": "eitc",
+          "pass": true,
+          "note": "non-zero OK",
+          "actual": 52.785
+        }
+      ],
+      "note": null
+    },
+    {
+      "id": "TC-W4",
+      "pass": true,
+      "details": [
+        {
+          "field": "wic",
+          "pass": true,
+          "note": "non-zero OK",
+          "actual": 73.52
+        }
+      ],
+      "note": "WIC at 3000 new may still qualify depending on TANF/SS totals"
+    }
+  ]
+}
