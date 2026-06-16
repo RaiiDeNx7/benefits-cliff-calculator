@@ -1,7 +1,8 @@
 (function () {
   "use strict";
 
-  const COUNT_MAX = 20;
+  const COUNT_MAX = 8;
+  const HOUSEHOLD_SIZE_MAX = 8;
 
   const BENEFIT_OUTPUT_IDS_CURRENT = [
     "output-cc-subsidy-current",
@@ -11,7 +12,6 @@
     "output-hcv-current",
     "output-snap-current",
     "output-tanf-max-current",
-    "output-tanf-view-t-current",
     "output-wic-current",
   ];
 
@@ -23,7 +23,6 @@
     "output-hcv-new",
     "output-snap-new",
     "output-tanf-max-new",
-    "output-tanf-view-t-new",
     "output-wic-new",
   ];
 
@@ -95,12 +94,9 @@
   }
 
   function getMonthlySocialSecurityTotal() {
-    const legacyEl = document.getElementById("child-care-monthly-ss");
-    const legacyTotal =
-      legacyEl instanceof HTMLInputElement ? parseNonNegativeNumber(legacyEl.value) : 0;
     const parentYes = isRadioYes("parent_yes_ss");
     const parentNo = isRadioYes("parent_no_ss");
-    if (!parentYes && !parentNo) return legacyTotal;
+    if (!parentYes && !parentNo) return 0;
 
     const yesEl = document.getElementById("parent-yes-ss-amount");
     const noEl = document.getElementById("parent-no-ss-amount");
@@ -112,9 +108,22 @@
       parentNo && noEl instanceof HTMLInputElement
         ? parseOptionalNonNegativeNumber(noEl.value)
         : null;
-    if (yesAmount === null && noAmount === null) return legacyTotal;
+    if (yesAmount === null && noAmount === null) return 0;
 
     return (yesAmount !== null ? yesAmount : 0) + (noAmount !== null ? noAmount : 0);
+  }
+
+  /** TANF-VIEW L/T for child care and HCV linkage (from calculated TANF paths). */
+  function getTanfPathLTForLinkage() {
+    if (typeof computeTanfViewRowLT !== "function") return { tanfL: 0, tanfT: 0 };
+    const p = buildTanfParams(monthlyEarnedCurrentDollars());
+    const row = computeTanfViewRowLT(p);
+    const tanfCb = getTanfCheckboxes().tanf;
+    const tanfViewCb = getTanfCheckboxes().tanfView;
+    return {
+      tanfL: tanfCb && tanfCb.checked ? Math.max(0, row.L) : 0,
+      tanfT: tanfViewCb && tanfViewCb.checked ? Math.max(0, row.T) : 0,
+    };
   }
 
   function getChildSsiMonthlyTotal() {
@@ -562,11 +571,21 @@
     }
   }
 
-  function syncCountInputs() {
+  function enforceHouseholdTotalCap() {
     const adultsEl = $("num-adults");
     const childrenEl = $("num-children");
-    adultsEl.value = String(clampCount(adultsEl.value));
-    childrenEl.value = String(clampCount(childrenEl.value));
+    let adults = clampCount(adultsEl.value);
+    let children = clampCount(childrenEl.value);
+    if (adults > HOUSEHOLD_SIZE_MAX) adults = HOUSEHOLD_SIZE_MAX;
+    if (adults + children > HOUSEHOLD_SIZE_MAX) {
+      children = Math.max(0, HOUSEHOLD_SIZE_MAX - adults);
+    }
+    adultsEl.value = String(adults);
+    childrenEl.value = String(children);
+  }
+
+  function syncCountInputs() {
+    enforceHouseholdTotalCap();
   }
 
   function onHouseholdCountChange() {
@@ -648,8 +667,7 @@
     const householdSize = clampCount($("num-adults").value) + clampCount($("num-children").value);
     const counts = getChildCareCountsFromForm();
     const monthlySS = getMonthlySocialSecurityTotal();
-    const tanfL = parseNonNegativeNumber($("cc-tanf-l").value);
-    const tanfT = parseNonNegativeNumber($("cc-tanf-t").value);
+    const tanfPath = getTanfPathLTForLinkage();
 
     const base = {
       childCareSelected: true,
@@ -657,8 +675,8 @@
       householdSize: householdSize,
       counts: counts,
       monthlySocialSecurity: monthlySS,
-      tanfPathL: tanfL,
-      tanfPathT: tanfT,
+      tanfPathL: tanfPath.tanfL,
+      tanfPathT: tanfPath.tanfT,
     };
 
     const cur = computeChildCareSubsidyMonthly(
@@ -822,8 +840,7 @@
     const children = clampCount($("num-children").value);
     const householdSize = adults + children;
     const monthlySS = getMonthlySocialSecurityTotal();
-    const tanfL = parseNonNegativeNumber($("cc-tanf-l").value);
-    const tanfT = parseNonNegativeNumber($("cc-tanf-t").value);
+    const tanfPath = getTanfPathLTForLinkage();
     const shelterMonthly = parseNonNegativeNumber($("shelter-expenses").value);
     const methodEl = document.querySelector('input[name="utility_method"]:checked');
     const isActualUtility =
@@ -841,8 +858,8 @@
       adultAges: getAdultAgesFromForm(),
       monthlySocialSecurity: monthlySS,
       monthlySsi: getAllSsiMonthlyTotal(),
-      tanfL: tanfL,
-      tanfT: tanfT,
+      tanfL: tanfPath.tanfL,
+      tanfT: tanfPath.tanfT,
       bedrooms: parseInt(bedrooms, 10),
       shelterMonthly: shelterMonthly,
       utilityMonthly: utilityMonthly,
@@ -925,16 +942,13 @@
     try {
     const outMaxCur = $("output-tanf-max-current");
     const outMaxNew = $("output-tanf-max-new");
-    const outViewTCur = $("output-tanf-view-t-current");
-    const outViewTNew = $("output-tanf-view-t-new");
-    const tanfCb = getTanfCheckboxes().tanf;
-    const tanfViewCb = getTanfCheckboxes().tanfView;
+    const { tanf: tanfCb, tanfView: tanfViewCb } = getTanfCheckboxes();
+    const tanfBenefitSelected =
+      (tanfCb && tanfCb.checked) || (tanfViewCb && tanfViewCb.checked);
 
-    if (typeof computeTanfMaxLT !== "function" || typeof computeTanfViewTOnly !== "function") {
+    if (typeof computeTanfMaxLT !== "function") {
       outMaxCur.textContent = "—";
       outMaxNew.textContent = "—";
-      outViewTCur.textContent = "—";
-      outViewTNew.textContent = "—";
       return;
     }
 
@@ -944,25 +958,17 @@
     const pNew = buildTanfParams(earnedCur);
     const maxCur = Math.max(0, computeTanfMaxLT(pCur));
     const maxNew = Math.max(0, computeTanfMaxLT(pNew));
-    const tCur = Math.max(0, computeTanfViewTOnly(pCur));
-    const tNew = Math.max(0, computeTanfViewTOnly(pNew));
 
-    if (tanfCb && tanfCb.checked) {
+    if (tanfBenefitSelected) {
       outMaxCur.textContent = formatTanfMonthly(Math.max(0, maxCur));
       outMaxNew.textContent = formatTanfMonthly(Math.max(0, maxNew));
     } else {
       outMaxCur.textContent = "—";
       outMaxNew.textContent = "—";
     }
-
-    if (tanfViewCb && tanfViewCb.checked) {
-      outViewTCur.textContent = formatTanfMonthly(Math.max(0, tCur));
-      outViewTNew.textContent = formatTanfMonthly(Math.max(0, tNew));
-    } else {
-      outViewTCur.textContent = "—";
-      outViewTNew.textContent = "—";
-    }
     } finally {
+      updateChildCareSubsidyOutputs();
+      updateHcvOutputs();
       updateAggregateOutputs();
     }
   }
@@ -1126,24 +1132,6 @@
     $("locality").addEventListener("change", updateSnapOutputs);
     $("locality").addEventListener("change", updateTanfOutputs);
     $("locality").addEventListener("change", updateWicOutputs);
-    $("child-care-monthly-ss").addEventListener("input", updateChildCareSubsidyOutputs);
-    $("child-care-monthly-ss").addEventListener("change", updateChildCareSubsidyOutputs);
-    $("child-care-monthly-ss").addEventListener("input", updateHcvOutputs);
-    $("child-care-monthly-ss").addEventListener("change", updateHcvOutputs);
-    $("child-care-monthly-ss").addEventListener("input", updateSnapOutputs);
-    $("child-care-monthly-ss").addEventListener("change", updateSnapOutputs);
-    $("child-care-monthly-ss").addEventListener("input", updateTanfOutputs);
-    $("child-care-monthly-ss").addEventListener("change", updateTanfOutputs);
-    $("child-care-monthly-ss").addEventListener("input", updateWicOutputs);
-    $("child-care-monthly-ss").addEventListener("change", updateWicOutputs);
-    $("cc-tanf-l").addEventListener("input", updateChildCareSubsidyOutputs);
-    $("cc-tanf-l").addEventListener("change", updateChildCareSubsidyOutputs);
-    $("cc-tanf-l").addEventListener("input", updateHcvOutputs);
-    $("cc-tanf-l").addEventListener("change", updateHcvOutputs);
-    $("cc-tanf-t").addEventListener("input", updateChildCareSubsidyOutputs);
-    $("cc-tanf-t").addEventListener("change", updateChildCareSubsidyOutputs);
-    $("cc-tanf-t").addEventListener("input", updateHcvOutputs);
-    $("cc-tanf-t").addEventListener("change", updateHcvOutputs);
     $("hcv-bedrooms").addEventListener("change", updateHcvOutputs);
 
     $("shelter-expenses").addEventListener("input", updateHcvOutputs);
@@ -1205,7 +1193,7 @@
       console.warn("snapTanfWicLookupData.js missing — WIC outputs disabled.");
     }
     if (typeof computeTanfMaxLT !== "function") {
-      console.warn("tanfView.js missing — TANF / TANF-VIEW outputs disabled.");
+      console.warn("tanfView.js missing — TANF outputs disabled.");
     }
     if (typeof computeWicMonthlyF !== "function") {
       console.warn("wic.js missing — WIC outputs disabled.");

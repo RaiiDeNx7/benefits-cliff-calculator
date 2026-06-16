@@ -11,7 +11,7 @@
  *   MAX(0, IF(A>$F,0, IF(AND(A<$F,A>=K), G-((A-K-1)*I), IF(AND(A<$K,A>=J), G, IF(A<$J, A*H, 0)))))
  * - D208 / D210 = C * 0.15 (VA add-on on these rows; row 5 uses 0.2 — do not mix).
  * - E208 / E210 = IF(A10, C+D, 0). UI shows E/12 (monthly).
- *
+ * 
  * @fileoverview Depends on eitcLookupData.js (EITC_RATES_NOT_MFJ, EITC_RATES_MFJ).
  */
 (function (global) {

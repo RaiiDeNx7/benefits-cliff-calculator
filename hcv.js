@@ -8,7 +8,7 @@
  * I row = IF(H2_elderCount + F59 > 0, 33.33, 0) — same F59 as sheet $I$2
  * J = max(0, F − H_row − I_row); K=0.3*J; L=0.1*F; M=50; N=max(K,L,M); P=payment std by bedroom
  *
- * C209/C211 use TANF-VIEW L212/T212 vs L214/T214; app reuses optional **cc-tanf-l** / **cc-tanf-t** (MAX).
+ * C209/C211 use TANF-VIEW L212/T212 vs L214/T214; app passes calculated TANF L/T from tanfView.js.
  * When qualified shelter is entered, subsidy is **min(P−N, GR−N)** with
  * **GR = min(P, max(shelter + max(util, SUA), min(F×α, P − pad)))** (α defaults to 1.825, pad to 75).
  *
@@ -36,7 +36,7 @@
   }
 
   function paymentStandard(loc, bedrooms) {
-    var bed = Math.max(1, Math.min(5, Math.floor(Number(bedrooms)) || 0));
+    var bed = Math.max(1, Math.min(4, Math.floor(Number(bedrooms)) || 0));
     if (!bed) return 0;
     var row = loc.paymentStandardByBedroom[String(bed)];
     return row != null ? Number(row) : 0;
