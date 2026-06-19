@@ -10,8 +10,14 @@
     return Math.min(8, Math.max(1, x));
   }
 
+  function tanfParentYesCount(p) {
+    return p.tanfParentYesCount != null
+      ? p.tanfParentYesCount
+      : p.tanfCaretakerDisabledYesCount;
+  }
+
   function tanfG6Key(p) {
-    const d6 = p.tanfCaretakerDisabledYesCount - p.tipD61;
+    const d6 = tanfParentYesCount(p) - p.tipD61;
     return clampHh(d6 + (p.tipB31Children - p.tipD66ChildrenNotInTanfAu));
   }
 
@@ -101,7 +107,7 @@
   }
 
   function computeTanfViewRowLT(p) {
-    const d6 = p.tanfCaretakerDisabledYesCount - p.tipD61;
+    const d6 = tanfParentYesCount(p) - p.tipD61;
     const g6k = tanfG6Key(p);
     const a3 = p.tanfRegionGroupA3 === 2 ? 2 : 1;
     const d2std = lookupTanfStandardDeduction(g6k);

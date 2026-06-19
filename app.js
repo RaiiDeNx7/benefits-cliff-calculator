@@ -93,24 +93,27 @@
     setPanelVisible("parent-no-ss-panel", isRadioYes("parent_no_ss"));
   }
 
+  /** TIP D80 — SS of adults who are parents of the children. */
+  function getParentYesSocialSecurityMonthly() {
+    if (!isRadioYes("parent_yes_ss")) return 0;
+    const el = document.getElementById("parent-yes-ss-amount");
+    if (!(el instanceof HTMLInputElement)) return 0;
+    const amount = parseOptionalNonNegativeNumber(el.value);
+    return amount !== null ? amount : 0;
+  }
+
+  /** TIP D86 — SS of adults who are not parents of the children. */
+  function getParentNoSocialSecurityMonthly() {
+    if (!isRadioYes("parent_no_ss")) return 0;
+    const el = document.getElementById("parent-no-ss-amount");
+    if (!(el instanceof HTMLInputElement)) return 0;
+    const amount = parseOptionalNonNegativeNumber(el.value);
+    return amount !== null ? amount : 0;
+  }
+
+  /** SNAP E209 and other paths that sum D80 + D86. */
   function getMonthlySocialSecurityTotal() {
-    const parentYes = isRadioYes("parent_yes_ss");
-    const parentNo = isRadioYes("parent_no_ss");
-    if (!parentYes && !parentNo) return 0;
-
-    const yesEl = document.getElementById("parent-yes-ss-amount");
-    const noEl = document.getElementById("parent-no-ss-amount");
-    const yesAmount =
-      parentYes && yesEl instanceof HTMLInputElement
-        ? parseOptionalNonNegativeNumber(yesEl.value)
-        : null;
-    const noAmount =
-      parentNo && noEl instanceof HTMLInputElement
-        ? parseOptionalNonNegativeNumber(noEl.value)
-        : null;
-    if (yesAmount === null && noAmount === null) return 0;
-
-    return (yesAmount !== null ? yesAmount : 0) + (noAmount !== null ? noAmount : 0);
+    return getParentYesSocialSecurityMonthly() + getParentNoSocialSecurityMonthly();
   }
 
   /** TANF-VIEW L/T for child care and HCV linkage (from calculated TANF paths). */
@@ -297,14 +300,80 @@
   /** Adults who answered Yes to "Parent of any children listed below?" (TANF-VIEW C4 / D6 path). */
   function getTanfParentYesCountFromForm() {
     const n = clampCount($("num-adults").value);
-    let count = 0;
+    let explicitYes = 0;
     for (let i = 0; i < n; i++) {
       const el = document.querySelector(
         'input[name="adult_parent_' + i + '"]:checked'
       );
-      if (el instanceof HTMLInputElement && el.value === "yes") count += 1;
+      if (el instanceof HTMLInputElement && el.value === "yes") explicitYes += 1;
     }
-    return count;
+    if (explicitYes > 0) return explicitYes;
+
+    // Workbook / meeting notes: when parent radios are unset (default No), infer from age.
+    let under62 = 0;
+    let elderly62Plus = 0;
+    for (let i = 0; i < n; i++) {
+      const ageEl = document.getElementById("adult-age-" + i);
+      const age = ageEl ? Math.floor(parseNonNegativeNumber(ageEl.value)) : 0;
+      if (age >= 62) elderly62Plus += 1;
+      else if (age > 0 && age < 62) under62 += 1;
+    }
+    if (under62 > 0) return under62;
+    if (elderly62Plus > 0 && elderly62Plus < n) return n - elderly62Plus;
+
+    const parentYesIncome = parseNonNegativeNumber($("parent-yes-current").value);
+    if (parentYesIncome > 0 && n > 0) {
+      return Math.max(1, n - elderly62Plus);
+    }
+    return 0;
+  }
+
+  /** TIP D66 — disabled children excluded from TANF assistance unit. */
+  function getTipD66ChildrenNotInTanfAuFromForm() {
+    if (!isRadioYes("children_disabled")) return 0;
+    const children = clampCount($("num-children").value);
+    const el = document.getElementById("disabled-children-count");
+    const disabled =
+      el instanceof HTMLInputElement ? clampCount(el.value) : 0;
+    return Math.min(disabled, children);
+  }
+
+  /** TIP D61 — non-parent adults excluded from TANF AU parent count (beyond first). */
+  function getTipD61FromForm() {
+    const numAdults = clampCount($("num-adults").value);
+    const parentYesCount = getTanfParentYesCountFromForm();
+    if (parentYesCount === 0) return 0;
+
+    // Workbook: only non-elderly (under 62) non-parent adults count toward D61.
+    let nonParentUnder62 = 0;
+    let anyExplicitParentYes = false;
+    for (let i = 0; i < numAdults; i++) {
+      const parentEl = document.querySelector(
+        'input[name="adult_parent_' + i + '"]:checked'
+      );
+      const isParent =
+        parentEl instanceof HTMLInputElement && parentEl.value === "yes";
+      if (isParent) {
+        anyExplicitParentYes = true;
+        continue;
+      }
+      const ageEl = document.getElementById("adult-age-" + i);
+      const age = ageEl ? Math.floor(parseNonNegativeNumber(ageEl.value)) : 0;
+      if (age > 0 && age < 62) nonParentUnder62 += 1;
+    }
+    if (!anyExplicitParentYes) {
+      let under62 = 0;
+      for (let i = 0; i < numAdults; i++) {
+        const ageEl = document.getElementById("adult-age-" + i);
+        const age = ageEl ? Math.floor(parseNonNegativeNumber(ageEl.value)) : 0;
+        if (age > 0 && age < 62) under62 += 1;
+      }
+      nonParentUnder62 = Math.max(0, under62 - parentYesCount);
+    }
+
+    let tipD61 = Math.max(0, nonParentUnder62 - 1);
+    tipD61 = Math.min(tipD61, parentYesCount - 1);
+    return tipD61;
   }
 
   function buildTanfParams(monthlyEarned) {
@@ -318,10 +387,10 @@
     const tanfViewCb = document.getElementById("benefit-tanf_view");
     return {
       monthlyEarned: monthlyEarned,
-      monthlySS: getMonthlySocialSecurityTotal(),
+      monthlySS: getParentYesSocialSecurityMonthly(),
       tanfParentYesCount: getTanfParentYesCountFromForm(),
-      tipD61: 0,
-      tipD66ChildrenNotInTanfAu: 0,
+      tipD61: getTipD61FromForm(),
+      tipD66ChildrenNotInTanfAu: getTipD66ChildrenNotInTanfAuFromForm(),
       tipB31Children: children,
       tanfRegionGroupA3: a3,
       tanfSelected: !!(tanfCb && tanfCb.checked),
@@ -666,7 +735,6 @@
     const locality = $("locality").value;
     const householdSize = clampCount($("num-adults").value) + clampCount($("num-children").value);
     const counts = getChildCareCountsFromForm();
-    const monthlySS = getMonthlySocialSecurityTotal();
     const tanfPath = getTanfPathLTForLinkage();
 
     const base = {
@@ -674,7 +742,7 @@
       locality: locality,
       householdSize: householdSize,
       counts: counts,
-      monthlySocialSecurity: monthlySS,
+      monthlySocialSecurity: getParentYesSocialSecurityMonthly(),
       tanfPathL: tanfPath.tanfL,
       tanfPathT: tanfPath.tanfT,
     };
@@ -686,8 +754,8 @@
       Object.assign({}, base, { monthlyEarned: monthlyEarnedNewDollars() })
     );
 
-    outCur.textContent = formatCurrency(Math.max(0, cur));
-    outNew.textContent = formatCurrency(Math.max(0, neu));
+    outCur.textContent = formatAggregateAmount(Math.max(0, cur));
+    outNew.textContent = formatAggregateAmount(Math.max(0, neu));
     } finally {
       updateAggregateOutputs();
     }
@@ -839,7 +907,6 @@
     const adults = clampCount($("num-adults").value);
     const children = clampCount($("num-children").value);
     const householdSize = adults + children;
-    const monthlySS = getMonthlySocialSecurityTotal();
     const tanfPath = getTanfPathLTForLinkage();
     const shelterMonthly = parseNonNegativeNumber($("shelter-expenses").value);
     const methodEl = document.querySelector('input[name="utility_method"]:checked');
@@ -856,7 +923,7 @@
       householdSize: householdSize,
       numDependents: children,
       adultAges: getAdultAgesFromForm(),
-      monthlySocialSecurity: monthlySS,
+      monthlySocialSecurity: getParentYesSocialSecurityMonthly(),
       monthlySsi: getAllSsiMonthlyTotal(),
       tanfL: tanfPath.tanfL,
       tanfT: tanfPath.tanfT,
@@ -910,8 +977,8 @@
       snapSelected: true,
       householdSizeSnap: adults + children,
       monthlyEarnedTanfB: monthlyEarnedCurrentDollars(),
-      monthlySS: getMonthlySocialSecurityTotal(),
-      countableUnearnedOther: 0,
+      monthlySS: getParentYesSocialSecurityMonthly(),
+      countableUnearnedOther: getParentNoSocialSecurityMonthly(),
       shelterMonthly: parseNonNegativeNumber($("shelter-expenses").value),
       utilityMethod: utilityMethod,
       utilityMonthly: parseNonNegativeNumber($("utility-expenses").value),
@@ -997,7 +1064,7 @@
     const children = clampCount($("num-children").value);
     const householdSize = adults + children;
     const tanfMax = Math.max(0, computeTanfMaxLT(buildTanfParamsForWic()));
-    const wicH2 = getMonthlySocialSecurityTotal();
+    const wicH2 = getParentYesSocialSecurityMonthly();
     const wicG = getWicEligiblePersonCount();
     const earnedCur = monthlyEarnedCurrentDollars();
     const earnedNew = monthlyEarnedNewDollars();
@@ -1073,7 +1140,10 @@
       el.addEventListener("change", updateDisabilityPanels);
     });
     document.querySelectorAll('input[name="children_disabled"]').forEach(function (el) {
-      el.addEventListener("change", updateDisabilityPanels);
+      el.addEventListener("change", function () {
+        updateDisabilityPanels();
+        refreshBenefitIncomeFromForm();
+      });
     });
     document.querySelectorAll('input[name="child_ssi_income"]').forEach(function (el) {
       el.addEventListener("change", function () {
@@ -1149,6 +1219,9 @@
     $("child-rows").addEventListener("change", updateTanfOutputs);
     $("child-rows").addEventListener("change", updateWicOutputs);
 
+    $("adult-rows").addEventListener("input", function () {
+      updateTanfOutputs();
+    });
     $("adult-rows").addEventListener("input", updateMarketplaceOutputs);
     $("adult-rows").addEventListener("change", updateMarketplaceOutputs);
     $("adult-rows").addEventListener("input", updateMedicaidOutputs);
@@ -1159,6 +1232,12 @@
     $("adult-rows").addEventListener("change", updateSnapOutputs);
     $("adult-rows").addEventListener("change", updateTanfOutputs);
     $("adult-rows").addEventListener("change", updateWicOutputs);
+    $("adult-rows").addEventListener("change", function (ev) {
+      const target = ev.target;
+      if (!(target instanceof HTMLInputElement)) return;
+      if (!/^adult_parent_\d+$/.test(target.name)) return;
+      refreshBenefitIncomeFromForm();
+    });
 
     const form = $("calculator-form");
     form.addEventListener("submit", function (ev) {
