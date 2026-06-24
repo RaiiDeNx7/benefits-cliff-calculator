@@ -1,0 +1,108 @@
+/**
+ * Regression: Test Case 7 / Household 11b (Pittsylvania per workbook B3).
+ * Workbook expected: TANF 355.40, SNAP 1224, HCV 1217.38, child care 2675.
+ */
+import { src, readConcat } from "../../lib/paths.mjs";
+
+const code = readConcat([
+  src.tanfLookup,
+  src.tanfView,
+  src.tanfCalc,
+  src.snapLookup,
+  src.snapCalc,
+  src.hcvLookup,
+  src.hcvCalc,
+  src.childCareLookup,
+  src.childCareCalc,
+]);
+
+const tanfParams = {
+  monthlyEarned: 500,
+  monthlySS: 0,
+  tanfParentYesCount: 2,
+  tipD61: 0,
+  tipD66ChildrenNotInTanfAu: 1,
+  tipB31Children: 3,
+  tanfRegionGroupA3: 2,
+  tanfSelected: true,
+  tanfViewSelected: false,
+};
+
+const snapParams = {
+  snapSelected: true,
+  householdSizeSnap: 7,
+  monthlyEarnedSnapD: 500,
+  monthlyEarnedTanfB: 500,
+  monthlySS: 0,
+  countableUnearnedOther: 500,
+  shelterMonthly: 500,
+  utilityMethod: "actual",
+  utilityMonthly: 0,
+  elderlyAdultsSnapCount: 2,
+  disabilitySupportIncomeSnap: 200,
+  tanfAnnualForSnapC205: 99500,
+  tanfParentYesCount: 2,
+  tanfCaretakerDisabledYesCount: 2,
+  tipD61: 0,
+  tipD66ChildrenNotInTanfAu: 1,
+  tipB31Children: 3,
+  tanfRegionGroupA3: 2,
+  tanfSelected: true,
+  tanfViewSelected: false,
+};
+
+const hcvParams = {
+  hcvSelected: true,
+  locality: "Pittsylvania",
+  householdSize: 7,
+  numDependents: 3,
+  adultAges: [34, 28, 67, 70],
+  monthlyEarned: 500,
+  tanfL: 355.4,
+  tanfT: 0,
+  monthlySocialSecurity: 0,
+  monthlySsi: 200,
+  bedrooms: 4,
+  shelterMonthly: 500,
+  utilityMonthly: 0,
+  snapUtilityAllowanceMonthly: 476,
+};
+
+const ccParams = {
+  childCareSelected: true,
+  locality: "Pittsylvania",
+  householdSize: 7,
+  counts: { infant: 1, toddler: 0, two: 1, preschool: 0, school: 1, teenIncapable: 0 },
+  monthlyEarned: 500,
+  monthlySocialSecurity: 0,
+  tanfPathL: 355.4,
+  tanfPathT: 0,
+};
+
+const run = new Function(
+  code +
+    "\nreturn {\n" +
+    "  tanf: computeTanfMaxLT(" +
+    JSON.stringify(tanfParams) +
+    "),\n" +
+    "  snap: computeSnapV(" +
+    JSON.stringify(snapParams) +
+    "),\n" +
+    "  hcv: computeHcvProgramMonthlyQ(" +
+    JSON.stringify(hcvParams) +
+    "),\n" +
+    "  childCare: computeChildCareSubsidyMonthly(" +
+    JSON.stringify(ccParams) +
+    "),\n" +
+    "};"
+);
+
+const r = run();
+const ok =
+  Math.abs(r.tanf - 355.4) < 0.01 &&
+  r.snap === 1224 &&
+  Math.abs(r.hcv - 1217.38) < 0.01 &&
+  r.childCare === 2675;
+
+console.log("TC7 (Household 11b)", r, ok ? "OK" : "FAIL");
+if (!ok) process.exit(1);
