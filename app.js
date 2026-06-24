@@ -3,6 +3,8 @@
 
   const COUNT_MAX = 8;
   const HOUSEHOLD_SIZE_MAX = 8;
+  const AGE_MIN = 1;
+  const AGE_MAX = 121;
 
   const BENEFIT_OUTPUT_IDS_CURRENT = [
     "output-cc-subsidy-current",
@@ -37,6 +39,30 @@
     const n = parseFloat(String(value).trim());
     if (Number.isNaN(n) || n < 0) return 0;
     return n;
+  }
+
+  function clampAgeValue(raw) {
+    const s = String(raw).trim();
+    if (!s) return null;
+    let n = Math.floor(parseFloat(s));
+    if (Number.isNaN(n)) return null;
+    if (n < AGE_MIN) n = AGE_MIN;
+    if (n > AGE_MAX) n = AGE_MAX;
+    return n;
+  }
+
+  /** @returns {number} 0 when age is empty or invalid */
+  function parseAgeForCalc(value) {
+    const clamped = clampAgeValue(value);
+    return clamped != null ? clamped : 0;
+  }
+
+  function onAdultAgeFieldCommit(ev) {
+    const target = ev.target;
+    if (!(target instanceof HTMLInputElement)) return;
+    if (!/^adult-age-\d+$/.test(target.id)) return;
+    const clamped = clampAgeValue(target.value);
+    if (clamped != null) target.value = String(clamped);
   }
 
   function parseOptionalNonNegativeNumber(value) {
@@ -248,8 +274,6 @@
       input.value = prog.id;
       input.id = "benefit-" + prog.id;
       if (prog.id === "hcv") input.dataset.hcv = "1";
-      if (prog.id === "tanf") input.dataset.tanfPair = "tanf_view";
-      if (prog.id === "tanf_view") input.dataset.tanfPair = "tanf";
       label.appendChild(input);
       label.appendChild(document.createTextNode(prog.label));
       wrap.appendChild(label);
@@ -314,7 +338,7 @@
     let elderly62Plus = 0;
     for (let i = 0; i < n; i++) {
       const ageEl = document.getElementById("adult-age-" + i);
-      const age = ageEl ? Math.floor(parseNonNegativeNumber(ageEl.value)) : 0;
+      const age = ageEl ? parseAgeForCalc(ageEl.value) : 0;
       if (age >= 62) elderly62Plus += 1;
       else if (age > 0 && age < 62) under62 += 1;
     }
@@ -358,14 +382,14 @@
         continue;
       }
       const ageEl = document.getElementById("adult-age-" + i);
-      const age = ageEl ? Math.floor(parseNonNegativeNumber(ageEl.value)) : 0;
+      const age = ageEl ? parseAgeForCalc(ageEl.value) : 0;
       if (age > 0 && age < 62) nonParentUnder62 += 1;
     }
     if (!anyExplicitParentYes) {
       let under62 = 0;
       for (let i = 0; i < numAdults; i++) {
         const ageEl = document.getElementById("adult-age-" + i);
-        const age = ageEl ? Math.floor(parseNonNegativeNumber(ageEl.value)) : 0;
+        const age = ageEl ? parseAgeForCalc(ageEl.value) : 0;
         if (age > 0 && age < 62) under62 += 1;
       }
       nonParentUnder62 = Math.max(0, under62 - parentYesCount);
@@ -409,7 +433,7 @@
     for (let i = 0; i < 8; i++) {
       if (i < n) {
         const el = document.getElementById("adult-age-" + i);
-        ages.push(el ? Math.floor(parseNonNegativeNumber(el.value)) : 0);
+        ages.push(el ? parseAgeForCalc(el.value) : 0);
       } else {
         ages.push(0);
       }
@@ -471,6 +495,22 @@
     return Number.isNaN(n) ? 0 : n;
   }
 
+  function setOutputDelta(deltaEl, currentAmount, newAmount, formatter) {
+    if (!deltaEl) return;
+    const delta = newAmount - currentAmount;
+    deltaEl.classList.remove("output-delta--up", "output-delta--down", "output-delta--same");
+    if (delta > 0) {
+      deltaEl.textContent = "+" + formatter(delta);
+      deltaEl.classList.add("output-delta--up");
+    } else if (delta < 0) {
+      deltaEl.textContent = "−" + formatter(Math.abs(delta));
+      deltaEl.classList.add("output-delta--down");
+    } else {
+      deltaEl.textContent = formatter(0);
+      deltaEl.classList.add("output-delta--same");
+    }
+  }
+
   function sumBenefitOutputs(ids) {
     let sum = 0;
     for (let i = 0; i < ids.length; i++) {
@@ -491,6 +531,18 @@
       benefitsCur + incomeCur
     );
     $("output-resources-new").textContent = formatAggregateAmount(benefitsNew + incomeNew);
+    setOutputDelta(
+      document.getElementById("output-benefits-total-delta"),
+      benefitsCur,
+      benefitsNew,
+      formatAggregateAmount
+    );
+    setOutputDelta(
+      document.getElementById("output-resources-delta"),
+      benefitsCur + incomeCur,
+      benefitsNew + incomeNew,
+      formatAggregateAmount
+    );
   }
 
   function updateHcvPanel() {
@@ -511,14 +563,6 @@
   function onBenefitChange(ev) {
     const target = ev.target;
     if (!(target instanceof HTMLInputElement) || target.type !== "checkbox") return;
-
-    if (target.dataset.tanfPair) {
-      const otherId = "benefit-" + target.dataset.tanfPair;
-      const other = document.getElementById(otherId);
-      if (target.checked && other instanceof HTMLInputElement) {
-        other.checked = false;
-      }
-    }
 
     if (target.dataset.hcv === "1" || target.id === "benefit-hcv") {
       updateHcvPanel();
@@ -583,7 +627,11 @@
         i +
         '" name="adult_age_' +
         i +
-        '" min="0" max="120" step="1" />' +
+        '" min="' +
+        AGE_MIN +
+        '" max="' +
+        AGE_MAX +
+        '" step="1" required />' +
         "</div>" +
         '<div class="field">' +
         '<span class="label-like" id="adult-parent-label-' +
@@ -701,6 +749,12 @@
     const totalNew = Math.ceil(yn) + Math.ceil(nn);
     $("output-total-current").textContent = formatCurrency(totalCurrent);
     $("output-total-new").textContent = formatCurrency(totalNew);
+    setOutputDelta(
+      document.getElementById("output-total-delta"),
+      totalCurrent,
+      totalNew,
+      formatCurrency
+    );
     updateChildCareSubsidyOutputs();
     updateEitcOutputs();
     updateMarketplaceOutputs();
@@ -1222,6 +1276,8 @@
     $("adult-rows").addEventListener("input", function () {
       updateTanfOutputs();
     });
+    $("adult-rows").addEventListener("change", onAdultAgeFieldCommit);
+    $("adult-rows").addEventListener("blur", onAdultAgeFieldCommit, true);
     $("adult-rows").addEventListener("input", updateMarketplaceOutputs);
     $("adult-rows").addEventListener("change", updateMarketplaceOutputs);
     $("adult-rows").addEventListener("input", updateMedicaidOutputs);

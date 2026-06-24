@@ -146,7 +146,6 @@ const BENEFIT_PROGRAMS = [
   { id: "medicaid", label: "Medicaid" },
   { id: "snap", label: "SNAP" },
   { id: "tanf", label: "TANF" },
-  { id: "tanf_view", label: "TANF/VIEW" },
   { id: "wic", label: "WIC" },
 ];
 

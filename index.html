@@ -456,58 +456,97 @@
 
         <section class="section outputs" aria-labelledby="outputs-heading">
           <h2 id="outputs-heading">Outputs</h2>
+
+          <div class="outputs-summary" aria-labelledby="outputs-summary-heading">
+            <h3 id="outputs-summary-heading" class="outputs-summary__heading">Household totals (monthly)</h3>
+            <p class="outputs-summary__lede">Compare current income and benefits with your new scenario at a glance.</p>
+
+            <div class="outputs-summary-table" role="table" aria-label="Monthly household totals comparison">
+              <div class="outputs-summary-table__head" role="row">
+                <span class="outputs-summary-table__metric" role="columnheader">Metric</span>
+                <span class="outputs-summary-table__col outputs-summary-table__col--current" role="columnheader">Current</span>
+                <span class="outputs-summary-table__col outputs-summary-table__col--new" role="columnheader">New</span>
+                <span class="outputs-summary-table__col outputs-summary-table__col--delta" role="columnheader">Change</span>
+              </div>
+
+              <div class="outputs-summary-row" role="row">
+                <span class="outputs-summary-row__label" role="rowheader">Total household income</span>
+                <span class="outputs-summary-row__value outputs-summary-row__value--current" role="cell">
+                  <span class="outputs-summary-amount" id="output-total-current" aria-live="polite">$0</span>
+                </span>
+                <span class="outputs-summary-row__value outputs-summary-row__value--new" role="cell">
+                  <span class="outputs-summary-amount" id="output-total-new" aria-live="polite">$0</span>
+                </span>
+                <span class="outputs-summary-row__value outputs-summary-row__value--delta" role="cell">
+                  <span class="output-delta" id="output-total-delta" aria-live="polite">$0</span>
+                </span>
+              </div>
+
+              <div class="outputs-summary-row" role="row">
+                <span class="outputs-summary-row__label output-label--with-tip" role="rowheader">
+                  <span class="output-label__text">Monthly selected benefits</span>
+                  <button
+                    type="button"
+                    class="info-tip"
+                    aria-label="Monthly selected benefits: sum of monthly amounts for benefit programs you selected. Unselected programs count as zero."
+                  >
+                    <span class="info-tip__icon" aria-hidden="true">i</span>
+                    <span class="info-tip__tooltip" role="tooltip"
+                      >Sum of monthly amounts for benefit programs you selected in step 2. Unselected or
+                      unavailable programs count as $0.</span
+                    >
+                  </button>
+                </span>
+                <span class="outputs-summary-row__value outputs-summary-row__value--current" role="cell">
+                  <span class="outputs-summary-amount" id="output-benefits-total-current" aria-live="polite">$0.00</span>
+                </span>
+                <span class="outputs-summary-row__value outputs-summary-row__value--new" role="cell">
+                  <span class="outputs-summary-amount" id="output-benefits-total-new" aria-live="polite">$0.00</span>
+                </span>
+                <span class="outputs-summary-row__value outputs-summary-row__value--delta" role="cell">
+                  <span class="output-delta" id="output-benefits-total-delta" aria-live="polite">$0.00</span>
+                </span>
+              </div>
+
+              <div class="outputs-summary-row outputs-summary-row--highlight" role="row">
+                <span class="outputs-summary-row__label output-label--with-tip" role="rowheader">
+                  <span class="output-label__text">Overall resources</span>
+                  <button
+                    type="button"
+                    class="info-tip"
+                    aria-label="Overall resources: monthly selected benefits plus exact earned income from parent income fields."
+                  >
+                    <span class="info-tip__icon" aria-hidden="true">i</span>
+                    <span class="info-tip__tooltip" role="tooltip"
+                      >Monthly selected benefits plus earned income from the parent income fields (exact
+                      amounts, not rounded up).</span
+                    >
+                  </button>
+                </span>
+                <span class="outputs-summary-row__value outputs-summary-row__value--current" role="cell">
+                  <span class="outputs-summary-amount" id="output-resources-current" aria-live="polite">$0.00</span>
+                </span>
+                <span class="outputs-summary-row__value outputs-summary-row__value--new" role="cell">
+                  <span class="outputs-summary-amount" id="output-resources-new" aria-live="polite">$0.00</span>
+                </span>
+                <span class="outputs-summary-row__value outputs-summary-row__value--delta" role="cell">
+                  <span class="output-delta" id="output-resources-delta" aria-live="polite">$0.00</span>
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <h3 class="outputs-detail-heading">Benefits by program</h3>
           <div class="outputs-columns">
             <div
               class="output-block output-block--current"
               aria-labelledby="outputs-current-heading"
             >
-              <h3 id="outputs-current-heading" class="output-block__heading">Current</h3>
+              <h3 id="outputs-current-heading" class="output-block__heading">
+                <span class="output-block__badge output-block__badge--current">Current</span>
+                <span class="output-block__title">Scenario</span>
+              </h3>
               <div class="output-grid output-grid--programs">
-                <div class="output-card">
-                  <span class="output-label">Total household income</span>
-                  <span class="output-value" id="output-total-current" aria-live="polite">$0</span>
-                </div>
-                <div class="output-card output-card--summary">
-                  <span class="output-label output-label--with-tip">
-                    <span class="output-label__text">Monthly selected benefits</span>
-                    <button
-                      type="button"
-                      class="info-tip"
-                      aria-label="Monthly selected benefits: sum of monthly amounts for benefit programs you selected. Unselected programs count as zero."
-                    >
-                      <span class="info-tip__icon" aria-hidden="true">i</span>
-                      <span class="info-tip__tooltip" role="tooltip"
-                        >Sum of monthly amounts for benefit programs you selected in step 2.
-                        Unselected or unavailable programs count as $0.</span
-                      >
-                    </button>
-                  </span>
-                  <span
-                    class="output-value"
-                    id="output-benefits-total-current"
-                    aria-live="polite"
-                    >$0.00</span
-                  >
-                </div>
-                <div class="output-card output-card--summary">
-                  <span class="output-label output-label--with-tip">
-                    <span class="output-label__text">Overall resources</span>
-                    <button
-                      type="button"
-                      class="info-tip"
-                      aria-label="Overall resources: monthly selected benefits plus exact earned income from parent income fields."
-                    >
-                      <span class="info-tip__icon" aria-hidden="true">i</span>
-                      <span class="info-tip__tooltip" role="tooltip"
-                        >Monthly selected benefits plus earned income from the parent income
-                        fields (exact amounts, not rounded up).</span
-                      >
-                    </button>
-                  </span>
-                  <span class="output-value" id="output-resources-current" aria-live="polite"
-                    >$0.00</span
-                  >
-                </div>
                 <div class="output-card">
                   <span class="output-label">Child care subsidy</span>
                   <span class="output-value" id="output-cc-subsidy-current" aria-live="polite"
@@ -556,50 +595,11 @@
               </div>
             </div>
             <div class="output-block output-block--new" aria-labelledby="outputs-new-heading">
-              <h3 id="outputs-new-heading" class="output-block__heading">New</h3>
+              <h3 id="outputs-new-heading" class="output-block__heading">
+                <span class="output-block__badge output-block__badge--new">New</span>
+                <span class="output-block__title">Scenario</span>
+              </h3>
               <div class="output-grid output-grid--programs">
-                <div class="output-card">
-                  <span class="output-label">Total household income</span>
-                  <span class="output-value" id="output-total-new" aria-live="polite">$0</span>
-                </div>
-                <div class="output-card output-card--summary">
-                  <span class="output-label output-label--with-tip">
-                    <span class="output-label__text">Monthly selected benefits</span>
-                    <button
-                      type="button"
-                      class="info-tip"
-                      aria-label="Monthly selected benefits: sum of monthly amounts for benefit programs you selected. Unselected programs count as zero."
-                    >
-                      <span class="info-tip__icon" aria-hidden="true">i</span>
-                      <span class="info-tip__tooltip" role="tooltip"
-                        >Sum of monthly amounts for benefit programs you selected in step 2.
-                        Unselected or unavailable programs count as $0.</span
-                      >
-                    </button>
-                  </span>
-                  <span class="output-value" id="output-benefits-total-new" aria-live="polite"
-                    >$0.00</span
-                  >
-                </div>
-                <div class="output-card output-card--summary">
-                  <span class="output-label output-label--with-tip">
-                    <span class="output-label__text">Overall resources</span>
-                    <button
-                      type="button"
-                      class="info-tip"
-                      aria-label="Overall resources: monthly selected benefits plus exact earned income from parent income fields."
-                    >
-                      <span class="info-tip__icon" aria-hidden="true">i</span>
-                      <span class="info-tip__tooltip" role="tooltip"
-                        >Monthly selected benefits plus earned income from the parent income
-                        fields (exact amounts, not rounded up).</span
-                      >
-                    </button>
-                  </span>
-                  <span class="output-value" id="output-resources-new" aria-live="polite"
-                    >$0.00</span
-                  >
-                </div>
                 <div class="output-card">
                   <span class="output-label">Child care subsidy</span>
                   <span class="output-value" id="output-cc-subsidy-new" aria-live="polite">—</span>
