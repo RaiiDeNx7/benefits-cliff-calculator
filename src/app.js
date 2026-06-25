@@ -6,6 +6,9 @@
   const AGE_MIN = 1;
   const AGE_MAX = 121;
 
+  /** True after the user explicitly picks a tax filing status radio. */
+  let taxFilingStatusUserSet = false;
+
   const BENEFIT_OUTPUT_IDS_CURRENT = [
     "output-cc-subsidy-current",
     "output-eitc-current",
@@ -245,9 +248,31 @@
     }).format(amount);
   }
 
+  function taxFilingStatusSelected() {
+    return (
+      document.querySelector('input[name="tax_filing_status"]:checked') instanceof
+      HTMLInputElement
+    );
+  }
+
   function filingIsMarriedJointly() {
     const el = document.querySelector('input[name="tax_filing_status"]:checked');
     return el instanceof HTMLInputElement && el.value === "mfj";
+  }
+
+  /** Match workbook B72 defaults when household size implies a typical filing status. */
+  function syncDefaultTaxFilingStatus() {
+    if (taxFilingStatusUserSet) return;
+    const adults = clampCount($("num-adults").value);
+    const mfj = document.querySelector('input[name="tax_filing_status"][value="mfj"]');
+    const single = document.querySelector(
+      'input[name="tax_filing_status"][value="single_hoh"]'
+    );
+    if (!(mfj instanceof HTMLInputElement) || !(single instanceof HTMLInputElement)) return;
+    mfj.checked = false;
+    single.checked = false;
+    if (adults >= 2) mfj.checked = true;
+    else if (adults === 1) single.checked = true;
   }
 
   function initLocalitySelect() {
@@ -707,6 +732,7 @@
 
   function onHouseholdCountChange() {
     syncCountInputs();
+    syncDefaultTaxFilingStatus();
     updateTotalPeople();
     renderAdultRows();
     renderChildRows();
@@ -826,6 +852,11 @@
       return;
     }
     if (!eitcCb.checked) {
+      outCur.textContent = "—";
+      outNew.textContent = "—";
+      return;
+    }
+    if (!taxFilingStatusSelected()) {
       outCur.textContent = "—";
       outNew.textContent = "—";
       return;
@@ -1159,6 +1190,7 @@
   }
 
   function resetFormToDefaults() {
+    taxFilingStatusUserSet = false;
     $("calculator-form").reset();
     $("benefits-checkboxes")
       .querySelectorAll('input[type="checkbox"]')
@@ -1186,8 +1218,11 @@
     });
 
     document.querySelectorAll('input[name="tax_filing_status"]').forEach(function (el) {
-      el.addEventListener("change", updateEitcTaxWarning);
-      el.addEventListener("change", updateEitcOutputs);
+      el.addEventListener("change", function () {
+        taxFilingStatusUserSet = true;
+        updateEitcTaxWarning();
+        updateEitcOutputs();
+      });
     });
 
     document.querySelectorAll('input[name="adults_disabled"]').forEach(function (el) {

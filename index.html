@@ -453,17 +453,19 @@
             </div>
           </div>
         </fieldset>
+      </form>
 
-        <section class="section outputs" aria-labelledby="outputs-heading">
-          <h2 id="outputs-heading">Outputs</h2>
+      <section class="outputs-card" aria-labelledby="outputs-heading">
+        <header class="outputs-card__header">
+          <h2 id="outputs-heading" class="outputs-card__title">Summary</h2>
+        </header>
 
-          <div class="outputs-summary" aria-labelledby="outputs-summary-heading">
-            <h3 id="outputs-summary-heading" class="outputs-summary__heading">Household totals (monthly)</h3>
-            <p class="outputs-summary__lede">Compare current income and benefits with your new scenario at a glance.</p>
+        <div class="outputs-summary" aria-labelledby="outputs-summary-heading">
+            <h3 id="outputs-summary-heading" class="outputs-summary__heading">Monthly Household Totals</h3>
 
             <div class="outputs-summary-table" role="table" aria-label="Monthly household totals comparison">
               <div class="outputs-summary-table__head" role="row">
-                <span class="outputs-summary-table__metric" role="columnheader">Metric</span>
+                <span class="outputs-summary-table__metric" role="columnheader" aria-hidden="true"></span>
                 <span class="outputs-summary-table__col outputs-summary-table__col--current" role="columnheader">Current</span>
                 <span class="outputs-summary-table__col outputs-summary-table__col--new" role="columnheader">New</span>
                 <span class="outputs-summary-table__col outputs-summary-table__col--delta" role="columnheader">Change</span>
@@ -544,7 +546,6 @@
             >
               <h3 id="outputs-current-heading" class="output-block__heading">
                 <span class="output-block__badge output-block__badge--current">Current</span>
-                <span class="output-block__title">Scenario</span>
               </h3>
               <div class="output-grid output-grid--programs">
                 <div class="output-card">
@@ -597,7 +598,6 @@
             <div class="output-block output-block--new" aria-labelledby="outputs-new-heading">
               <h3 id="outputs-new-heading" class="output-block__heading">
                 <span class="output-block__badge output-block__badge--new">New</span>
-                <span class="output-block__title">Scenario</span>
               </h3>
               <div class="output-grid output-grid--programs">
                 <div class="output-card">
@@ -640,8 +640,7 @@
               </div>
             </div>
           </div>
-        </section>
-      </form>
+      </section>
     </main>
 
         <script src="src/config/data.js"></script>
