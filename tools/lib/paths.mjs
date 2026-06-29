@@ -8,7 +8,10 @@ import vm from "vm";
 
 const toolsLibDir = dirname(fileURLToPath(import.meta.url));
 export const root = join(toolsLibDir, "../..");
-export const wbPath = join(root, "data/source/FY2026-workbook.xlsx");
+export const wbPath = join(
+  root,
+  "data/source/Benefits Cliff Calculator with disability + SSI draft FY2026 FPL_copy.xlsx"
+);
 
 export const src = {
   configData: join(root, "src/config/data.js"),

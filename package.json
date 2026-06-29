@@ -20,7 +20,10 @@
     "build-eitc-data": "node tools/build/build-eitcLookupData.mjs",
     "build-marketplace-data": "node tools/build/build-marketplaceLookupData.mjs",
     "build-medicaid-data": "node tools/build/build-medicaidLookupData.mjs",
-    "build-hcv-data": "node tools/build/build-hcvLookupData.mjs"
+    "build-hcv-data": "node tools/build/build-hcvLookupData.mjs",
+    "build-snap-data": "node tools/build/build-snapLookupData.mjs",
+    "build-tanf-data": "node tools/build/build-tanfLookupData.mjs",
+    "build-wic-data": "node tools/build/build-wicLookupData.mjs"
   },
   "keywords": [],
   "author": "",

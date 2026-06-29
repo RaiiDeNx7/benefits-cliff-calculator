@@ -1,6 +1,6 @@
 /**
- * Auto-generated from FY2026 workbook (Program specific data).
- * Regenerate: npm run build:snap-data
+ * Auto-generated from FY2026 workbook (Program specific data + SNAP!L2).
+ * Regenerate: npm run build-snap-data
  */
 
 const SNAP_GROSS_NET_TEST_ROWS = [
