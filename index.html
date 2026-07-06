@@ -35,7 +35,20 @@
           <div id="benefits-checkboxes" class="checkbox-grid"></div>
 
           <div id="hcv-panel" class="conditional-panel is-hidden" hidden>
-            <label for="hcv-bedrooms">Number of bedrooms in the unit</label>
+            <div class="field-label--with-tip">
+              <label for="hcv-bedrooms" class="field-label__text">Number of bedrooms in the unit</label>
+              <button
+                type="button"
+                class="info-tip"
+                aria-label="Number of bedrooms in the unit: if unknown, use 1 bedroom for every 2 adults and 1 for every 2 dependents of the same gender."
+              >
+                <span class="info-tip__icon" aria-hidden="true">i</span>
+                <span class="info-tip__tooltip" role="tooltip"
+                  >If unknown, use 1 bedroom for every 2 adults and 1 for every 2 dependents of the
+                  same gender.</span
+                >
+              </button>
+            </div>
             <select id="hcv-bedrooms" name="hcv_bedrooms" aria-required="true">
               <option value="">Select…</option>
               <option value="1">1</option>
@@ -43,16 +56,23 @@
               <option value="3">3</option>
               <option value="4">4</option>
             </select>
-            <p class="hint">
-              If unknown: use 1 bedroom for every 2 adults and 1 for every 2 dependents of the same
-              gender.
-            </p>
           </div>
         </fieldset>
 
         <fieldset class="section">
-          <legend>3. Household size</legend>
-          <p class="hint">Adults plus children cannot exceed 8 (matches benefit program household limits).</p>
+          <legend class="section-title--with-tip">
+            <span class="section-title__text">3. Household size</span>
+            <button
+              type="button"
+              class="info-tip"
+              aria-label="Household size: adults plus children cannot exceed 8 (matches benefit program household limits)."
+            >
+              <span class="info-tip__icon" aria-hidden="true">i</span>
+              <span class="info-tip__tooltip" role="tooltip"
+                >Adults plus children cannot exceed 8 (matches benefit program household limits).</span
+              >
+            </button>
+          </legend>
           <div class="field-row field-row--household">
             <div class="field">
               <label for="num-adults">Number of adults in household</label>
@@ -272,7 +292,22 @@
         <fieldset class="section">
           <legend>Shelter and utilities</legend>
           <div class="field">
-            <label for="shelter-expenses">Qualified shelter expenses (monthly)</label>
+            <div class="field-label--with-tip">
+              <label for="shelter-expenses" class="field-label__text"
+                >Qualified shelter expenses (monthly)</label
+              >
+              <button
+                type="button"
+                class="info-tip"
+                aria-label="Qualified shelter expenses: rent, mortgage, loan payments, or other continuing charges toward ownership of shelter."
+              >
+                <span class="info-tip__icon" aria-hidden="true">i</span>
+                <span class="info-tip__tooltip" role="tooltip"
+                  >Rent, mortgage, loan payments, or other continuing charges toward ownership of
+                  shelter.</span
+                >
+              </button>
+            </div>
             <input
               type="number"
               id="shelter-expenses"
@@ -282,9 +317,6 @@
               inputmode="decimal"
               placeholder="0"
             />
-            <p class="hint">
-              Rent, mortgage, loan payments, or other continuing charges toward ownership of shelter.
-            </p>
           </div>
           <div class="field">
             <span class="label-like" id="utility-method-label">Utility costs</span>
@@ -300,7 +332,20 @@
             </div>
           </div>
           <div class="field">
-            <label for="utility-expenses">Monthly utility expenses</label>
+            <div class="field-label--with-tip">
+              <label for="utility-expenses" class="field-label__text">Monthly utility expenses</label>
+              <button
+                type="button"
+                class="info-tip"
+                aria-label="Monthly utility expenses: enter your actual monthly total when using actual costs; SUA uses a standard amount in benefit rules and this field may be unused when SUA applies."
+              >
+                <span class="info-tip__icon" aria-hidden="true">i</span>
+                <span class="info-tip__tooltip" role="tooltip"
+                  >Enter your actual monthly total when using actual costs. SUA uses a standard
+                  amount in benefit rules, so this field may be unused when SUA applies.</span
+                >
+              </button>
+            </div>
             <input
               type="number"
               id="utility-expenses"
@@ -310,16 +355,23 @@
               inputmode="decimal"
               placeholder="0"
             />
-            <p class="hint" id="utility-expenses-hint">
-              Enter your actual monthly total when using actual costs; SUA uses a standard amount in
-              benefit rules (this field may be unused when SUA applies).
-            </p>
           </div>
         </fieldset>
 
         <fieldset class="section">
-          <legend>Tax filing status</legend>
-          <p class="hint">Must be selected for EITC calculations.</p>
+          <legend class="section-title--with-tip">
+            <span class="section-title__text">Tax filing status</span>
+            <button
+              type="button"
+              class="info-tip"
+              aria-label="Tax filing status: must be selected for EITC calculations."
+            >
+              <span class="info-tip__icon" aria-hidden="true">i</span>
+              <span class="info-tip__tooltip" role="tooltip"
+                >Must be selected for EITC calculations.</span
+              >
+            </button>
+          </legend>
           <div class="radio-stack" role="radiogroup" aria-label="Tax filing status">
             <label>
               <input type="radio" name="tax_filing_status" value="mfj" /> Married filing jointly
@@ -333,11 +385,22 @@
         </fieldset>
 
         <fieldset class="section">
-          <legend>Income — adults who are parents of the children listed (combined totals)</legend>
-          <p class="hint">
-            Do not count income of the elderly, disabled adult, or spouse when excluded by program
-            rules.
-          </p>
+          <legend class="section-title--with-tip">
+            <span class="section-title__text"
+              >Income — adults who are parents of the children listed (combined totals)</span
+            >
+            <button
+              type="button"
+              class="info-tip"
+              aria-label="Income for adults who are parents of the children listed: do not count income of the elderly, disabled adult, or spouse when excluded by program rules."
+            >
+              <span class="info-tip__icon" aria-hidden="true">i</span>
+              <span class="info-tip__tooltip" role="tooltip"
+                >Do not count income of the elderly, disabled adult, or spouse when excluded by
+                program rules.</span
+              >
+            </button>
+          </legend>
           <div class="field-row field-row--two">
             <div class="field">
               <label for="parent-yes-current">Current all-adult monthly earned income ($)</label>
@@ -394,11 +457,22 @@
         </fieldset>
 
         <fieldset class="section">
-          <legend>Income — adults who are not parents of the children listed (combined totals)</legend>
-          <p class="hint">
-            Do not count income of the elderly, disabled adult, or spouse when excluded by program
-            rules.
-          </p>
+          <legend class="section-title--with-tip">
+            <span class="section-title__text"
+              >Income — adults who are not parents of the children listed (combined totals)</span
+            >
+            <button
+              type="button"
+              class="info-tip"
+              aria-label="Income for adults who are not parents of the children listed: do not count income of the elderly, disabled adult, or spouse when excluded by program rules."
+            >
+              <span class="info-tip__icon" aria-hidden="true">i</span>
+              <span class="info-tip__tooltip" role="tooltip"
+                >Do not count income of the elderly, disabled adult, or spouse when excluded by
+                program rules.</span
+              >
+            </button>
+          </legend>
           <div class="field-row field-row--two">
             <div class="field">
               <label for="parent-no-current">Current all-adult monthly earned income ($)</label>
@@ -570,7 +644,20 @@
                   >
                 </div>
                 <div class="output-card">
-                  <span class="output-label">Medicaid</span>
+                  <span class="output-label output-label--with-tip">
+                    <span class="output-label__text">Medicaid</span>
+                    <button
+                      type="button"
+                      class="info-tip"
+                      aria-label="Medicaid estimated value: this amount is an estimate of the potential benefit value if approved. It does not mean Medicaid is currently active."
+                    >
+                      <span class="info-tip__icon" aria-hidden="true">i</span>
+                      <span class="info-tip__tooltip" role="tooltip"
+                        >Estimated value if approved for Medicaid. This does not mean Medicaid is
+                        currently active.</span
+                      >
+                    </button>
+                  </span>
                   <span class="output-value" id="output-medicaid-current" aria-live="polite"
                     >—</span
                   >
@@ -618,7 +705,20 @@
                   <span class="output-value" id="output-marketplace-new" aria-live="polite">—</span>
                 </div>
                 <div class="output-card">
-                  <span class="output-label">Medicaid</span>
+                  <span class="output-label output-label--with-tip">
+                    <span class="output-label__text">Medicaid</span>
+                    <button
+                      type="button"
+                      class="info-tip"
+                      aria-label="Medicaid estimated value: this amount is an estimate of the potential benefit value if approved. It does not mean Medicaid is currently active."
+                    >
+                      <span class="info-tip__icon" aria-hidden="true">i</span>
+                      <span class="info-tip__tooltip" role="tooltip"
+                        >Estimated value if approved for Medicaid. This does not mean Medicaid is
+                        currently active.</span
+                      >
+                    </button>
+                  </span>
                   <span class="output-value" id="output-medicaid-new" aria-live="polite">—</span>
                 </div>
                 <div class="output-card">

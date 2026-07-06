@@ -298,6 +298,40 @@ body {
 
 
 
+.section-title--with-tip,
+
+.field-label--with-tip {
+
+  display: flex;
+
+  align-items: flex-start;
+
+  gap: 0.35rem;
+
+}
+
+
+
+.section-title__text,
+
+.field-label__text {
+
+  flex: 1;
+
+  min-width: 0;
+
+}
+
+
+
+.field-label--with-tip > .field-label__text {
+
+  margin-bottom: 0;
+
+}
+
+
+
 label,
 
 .label-like {

@@ -750,17 +750,8 @@
   function updateUtilityFieldState() {
     const method = document.querySelector('input[name="utility_method"]:checked');
     const input = $("utility-expenses");
-    const hint = $("utility-expenses-hint");
-    if (!method || !input || !hint) return;
-    const isSua = method.value === "sua";
-    input.disabled = isSua;
-    if (isSua) {
-      hint.textContent =
-        "Standard Utility Allowance (SUA) uses a standard amount in benefit rules; monthly utility expenses are not used the same way as actual costs.";
-    } else {
-      hint.textContent =
-        "Enter your total actual monthly utility costs when using actual costs.";
-    }
+    if (!method || !input) return;
+    input.disabled = method.value === "sua";
     updateHcvOutputs();
     updateSnapOutputs();
     updateAggregateOutputs();
