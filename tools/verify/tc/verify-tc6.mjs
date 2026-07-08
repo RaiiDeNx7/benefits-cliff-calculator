@@ -39,6 +39,7 @@ const snapParams = {
   utilityMethod: "actual",
   utilityMonthly: 500,
   elderlyAdultsSnapCount: 0,
+  snapDisabilityMemberCount: 1,
   disabilitySupportIncomeSnap: 200,
   tanfAnnualForSnapC205: 99500,
   tanfParentYesCount: 2,

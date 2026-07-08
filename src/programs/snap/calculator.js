@@ -63,8 +63,9 @@
    * @param {number} p.shelterMonthly — Tip B69
    * @param {string} p.utilityMethod
    * @param {number} p.utilityMonthly
-   * @param {number} p.elderlyAdultsSnapCount
-   * @param {number} p.disabilitySupportIncomeSnap
+   * @param {number} p.elderlyAdultsSnapCount — SNAP D2 (ages > 59)
+   * @param {number} p.snapDisabilityMemberCount — SNAP E2 (F59+D59+H59+D64)
+   * @param {number} p.disabilitySupportIncomeSnap — SNAP F209/F211 (SSI income)
    * @param {number} p.tanfAnnualForSnapC205
    * @param {number} p.tanfCaretakerDisabledYesCount
    * @param {number} p.tipD61
@@ -114,7 +115,7 @@
     const nShelterTotal = lRow + mShelter;
     const pHalf = k / 2;
     const d2 = Number(p.elderlyAdultsSnapCount) || 0;
-    const e2 = Number(p.disabilitySupportIncomeSnap) || 0;
+    const e2 = Number(p.snapDisabilityMemberCount) || 0;
     const deSum = d2 + e2;
     const oYes = deSum > 0 && k < j2net;
     let q = 0;

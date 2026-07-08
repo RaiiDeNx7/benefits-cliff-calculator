@@ -356,25 +356,34 @@
       );
       if (el instanceof HTMLInputElement && el.value === "yes") explicitYes += 1;
     }
-    if (explicitYes > 0) return explicitYes;
+    return explicitYes;
+  }
 
-    // Workbook / meeting notes: when parent radios are unset (default No), infer from age.
-    let under62 = 0;
-    let elderly62Plus = 0;
-    for (let i = 0; i < n; i++) {
-      const ageEl = document.getElementById("adult-age-" + i);
-      const age = ageEl ? parseAgeForCalc(ageEl.value) : 0;
-      if (age >= 62) elderly62Plus += 1;
-      else if (age > 0 && age < 62) under62 += 1;
-    }
-    if (under62 > 0) return under62;
-    if (elderly62Plus > 0 && elderly62Plus < n) return n - elderly62Plus;
+  /** SNAP D2 — COUNTIF(TIP adult ages, ">59"). */
+  function getSnapElderlyAdultsCountFromForm() {
+    return getAdultAgesFromForm().filter(function (age) {
+      return age > 59;
+    }).length;
+  }
 
-    const parentYesIncome = parseNonNegativeNumber($("parent-yes-current").value);
-    if (parentYesIncome > 0 && n > 0) {
-      return Math.max(1, n - elderly62Plus);
+  /** SNAP E2 — TIP F59 + D59 + H59 + D64 (disabled member counts, not SSI dollars). */
+  function getSnapDisabilityMemberCountFromForm() {
+    let n = 0;
+    if (isRadioYes("adults_disabled")) {
+      const head = document.getElementById("disabled-adult-head-spouse");
+      const nonHead = document.getElementById("disabled-adult-non-elderly-not-head");
+      const elderly = document.getElementById("disabled-adult-elderly");
+      if (head instanceof HTMLInputElement) n += clampCount(head.value);
+      if (nonHead instanceof HTMLInputElement) n += clampCount(nonHead.value);
+      if (elderly instanceof HTMLInputElement) n += clampCount(elderly.value);
     }
-    return 0;
+    if (isRadioYes("children_disabled")) {
+      const children = clampCount($("num-children").value);
+      const el = document.getElementById("disabled-children-count");
+      const disabled = el instanceof HTMLInputElement ? clampCount(el.value) : 0;
+      n += Math.min(disabled, children);
+    }
+    return n;
   }
 
   /** TIP D66 — disabled children excluded from TANF assistance unit. */
@@ -395,29 +404,16 @@
 
     // Workbook: only non-elderly (under 62) non-parent adults count toward D61.
     let nonParentUnder62 = 0;
-    let anyExplicitParentYes = false;
     for (let i = 0; i < numAdults; i++) {
       const parentEl = document.querySelector(
         'input[name="adult_parent_' + i + '"]:checked'
       );
       const isParent =
         parentEl instanceof HTMLInputElement && parentEl.value === "yes";
-      if (isParent) {
-        anyExplicitParentYes = true;
-        continue;
-      }
+      if (isParent) continue;
       const ageEl = document.getElementById("adult-age-" + i);
       const age = ageEl ? parseAgeForCalc(ageEl.value) : 0;
       if (age > 0 && age < 62) nonParentUnder62 += 1;
-    }
-    if (!anyExplicitParentYes) {
-      let under62 = 0;
-      for (let i = 0; i < numAdults; i++) {
-        const ageEl = document.getElementById("adult-age-" + i);
-        const age = ageEl ? parseAgeForCalc(ageEl.value) : 0;
-        if (age > 0 && age < 62) under62 += 1;
-      }
-      nonParentUnder62 = Math.max(0, under62 - parentYesCount);
     }
 
     let tipD61 = Math.max(0, nonParentUnder62 - 1);
@@ -1045,10 +1041,6 @@
     const methodEl = document.querySelector('input[name="utility_method"]:checked');
     const utilityMethod =
       methodEl instanceof HTMLInputElement && methodEl.value === "actual" ? "actual" : "sua";
-    const elderlyAdults = getAdultAgesFromForm().filter(function (age) {
-      return age >= 60;
-    }).length;
-
     const base = {
       snapSelected: true,
       householdSizeSnap: adults + children,
@@ -1058,7 +1050,8 @@
       shelterMonthly: parseNonNegativeNumber($("shelter-expenses").value),
       utilityMethod: utilityMethod,
       utilityMonthly: parseNonNegativeNumber($("utility-expenses").value),
-      elderlyAdultsSnapCount: elderlyAdults,
+      elderlyAdultsSnapCount: getSnapElderlyAdultsCountFromForm(),
+      snapDisabilityMemberCount: getSnapDisabilityMemberCountFromForm(),
       disabilitySupportIncomeSnap: getAllSsiMonthlyTotal(),
       tanfAnnualForSnapC205: 99500,
       tanfCaretakerDisabledYesCount: tanfBase.tanfParentYesCount || 0,
