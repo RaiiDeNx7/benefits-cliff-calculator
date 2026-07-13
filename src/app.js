@@ -1184,10 +1184,368 @@
     refreshCalculatorAfterInputChange();
   }
 
+  function getSelectedRadioValue(name) {
+    const el = document.querySelector('input[name="' + name + '"]:checked');
+    return el instanceof HTMLInputElement ? el.value : "";
+  }
+
+  function getSelectOptionText(selectId) {
+    const sel = document.getElementById(selectId);
+    if (!(sel instanceof HTMLSelectElement)) return "";
+    const opt = sel.options[sel.selectedIndex];
+    return opt ? String(opt.textContent).trim() : "";
+  }
+
+  function inputRow(field, value) {
+    return ["Inputs", field, value == null ? "" : String(value), "", ""];
+  }
+
+  function collectExportInputs() {
+    const rows = [];
+    const localityText = getSelectOptionText("locality");
+    rows.push(inputRow("Locality", localityText || $("locality").value || ""));
+
+    const selectedBenefits = [];
+    $("benefits-checkboxes")
+      .querySelectorAll('input[type="checkbox"]')
+      .forEach(function (cb) {
+        if (!(cb instanceof HTMLInputElement) || !cb.checked) return;
+        const label = cb.parentElement ? cb.parentElement.textContent : cb.value;
+        selectedBenefits.push(String(label || cb.value).trim());
+      });
+    rows.push(inputRow("Selected benefits", selectedBenefits.join("; ")));
+
+    const hcvCb = getHcvCheckbox();
+    if (hcvCb && hcvCb.checked) {
+      rows.push(inputRow("HCV bedrooms", getSelectOptionText("hcv-bedrooms") || $("hcv-bedrooms").value));
+    }
+
+    rows.push(inputRow("Number of adults", $("num-adults").value));
+    rows.push(inputRow("Number of children", $("num-children").value));
+    rows.push(inputRow("Total number of people", $("total-people").value));
+
+    const numAdults = clampCount($("num-adults").value);
+    for (let i = 0; i < numAdults; i++) {
+      const ageEl = document.getElementById("adult-age-" + i);
+      const parentVal = getSelectedRadioValue("adult_parent_" + i);
+      rows.push(inputRow("Adult " + (i + 1) + " age", ageEl ? ageEl.value : ""));
+      rows.push(
+        inputRow(
+          "Adult " + (i + 1) + " parent",
+          parentVal === "yes" ? "Yes" : parentVal === "no" ? "No" : ""
+        )
+      );
+    }
+
+    const numChildren = clampCount($("num-children").value);
+    for (let i = 0; i < numChildren; i++) {
+      rows.push(
+        inputRow("Child " + (i + 1) + " age category", getSelectOptionText("child-band-" + i))
+      );
+    }
+
+    const adultsDisabled = getSelectedRadioValue("adults_disabled");
+    rows.push(
+      inputRow("Are any adults disabled?", adultsDisabled === "yes" ? "Yes" : adultsDisabled === "no" ? "No" : "")
+    );
+    if (adultsDisabled === "yes") {
+      rows.push(inputRow("Disabled adults (head or spouse)", $("disabled-adult-head-spouse").value));
+      rows.push(
+        inputRow(
+          "Disabled non-elderly adults (not head/spouse)",
+          $("disabled-adult-non-elderly-not-head").value
+        )
+      );
+      rows.push(inputRow("Disabled elderly adults", $("disabled-adult-elderly").value));
+      const adultSsi = getSelectedRadioValue("adult_ssi_income");
+      rows.push(
+        inputRow("SSI income (adult)?", adultSsi === "yes" ? "Yes" : adultSsi === "no" ? "No" : "")
+      );
+      if (adultSsi === "yes") {
+        rows.push(inputRow("Disabled adults on SSI who are parents", $("adult-ssi-parent-count").value));
+        rows.push(inputRow("Adults receiving SSI", $("adult-ssi-recipients").value));
+        rows.push(inputRow("Total adult SSI income", $("adult-ssi-total-monthly").value));
+      }
+    }
+
+    const childrenDisabled = getSelectedRadioValue("children_disabled");
+    rows.push(
+      inputRow(
+        "Are any children disabled?",
+        childrenDisabled === "yes" ? "Yes" : childrenDisabled === "no" ? "No" : ""
+      )
+    );
+    if (childrenDisabled === "yes") {
+      rows.push(inputRow("Number of disabled children", $("disabled-children-count").value));
+      const childSsi = getSelectedRadioValue("child_ssi_income");
+      rows.push(
+        inputRow("SSI income (child)?", childSsi === "yes" ? "Yes" : childSsi === "no" ? "No" : "")
+      );
+      if (childSsi === "yes") {
+        rows.push(inputRow("Children receiving SSI", $("child-ssi-recipients").value));
+        rows.push(inputRow("Total child SSI income", $("child-ssi-total-monthly").value));
+      }
+    }
+
+    rows.push(inputRow("Shelter expenses", $("shelter-expenses").value));
+    const utilityMethod = getSelectedRadioValue("utility_method");
+    rows.push(
+      inputRow(
+        "Utility costs method",
+        utilityMethod === "actual"
+          ? "Actual monthly"
+          : utilityMethod === "sua"
+            ? "Standard Utility Allowance"
+            : utilityMethod
+      )
+    );
+    rows.push(inputRow("Utility expenses", $("utility-expenses").value));
+
+    const taxStatus = getSelectedRadioValue("tax_filing_status");
+    rows.push(
+      inputRow(
+        "Tax filing status",
+        taxStatus === "mfj"
+          ? "Married filing jointly"
+          : taxStatus === "single_hoh"
+            ? "Single, head of household, qualifying surviving spouse"
+            : taxStatus
+      )
+    );
+
+    rows.push(inputRow("Parent (yes) current monthly income", $("parent-yes-current").value));
+    rows.push(inputRow("Parent (yes) new monthly income", $("parent-yes-new").value));
+    const parentYesSs = getSelectedRadioValue("parent_yes_ss");
+    rows.push(
+      inputRow(
+        "Parent (yes) Social Security?",
+        parentYesSs === "yes" ? "Yes" : parentYesSs === "no" ? "No" : ""
+      )
+    );
+    if (parentYesSs === "yes") {
+      rows.push(inputRow("Parent (yes) Social Security amount", $("parent-yes-ss-amount").value));
+    }
+
+    rows.push(inputRow("Parent (no) current monthly income", $("parent-no-current").value));
+    rows.push(inputRow("Parent (no) new monthly income", $("parent-no-new").value));
+    const parentNoSs = getSelectedRadioValue("parent_no_ss");
+    rows.push(
+      inputRow(
+        "Parent (no) Social Security?",
+        parentNoSs === "yes" ? "Yes" : parentNoSs === "no" ? "No" : ""
+      )
+    );
+    if (parentNoSs === "yes") {
+      rows.push(inputRow("Parent (no) Social Security amount", $("parent-no-ss-amount").value));
+    }
+
+    return rows;
+  }
+
+  function textOf(id) {
+    const el = document.getElementById(id);
+    return el ? String(el.textContent).trim() : "";
+  }
+
+  function collectExportSummary() {
+    const rows = [];
+    rows.push([
+      "Summary",
+      "Total household income",
+      textOf("output-total-current"),
+      textOf("output-total-new"),
+      textOf("output-total-delta"),
+    ]);
+    rows.push([
+      "Summary",
+      "Monthly selected benefits",
+      textOf("output-benefits-total-current"),
+      textOf("output-benefits-total-new"),
+      textOf("output-benefits-total-delta"),
+    ]);
+    rows.push([
+      "Summary",
+      "Overall resources",
+      textOf("output-resources-current"),
+      textOf("output-resources-new"),
+      textOf("output-resources-delta"),
+    ]);
+
+    const programs = [
+      { label: "Child care subsidy", current: "output-cc-subsidy-current", neu: "output-cc-subsidy-new" },
+      { label: "EITC + VA (monthly)", current: "output-eitc-current", neu: "output-eitc-new" },
+      { label: "Marketplace subsidy", current: "output-marketplace-current", neu: "output-marketplace-new" },
+      { label: "Medicaid", current: "output-medicaid-current", neu: "output-medicaid-new" },
+      { label: "HCV program", current: "output-hcv-current", neu: "output-hcv-new" },
+      { label: "SNAP", current: "output-snap-current", neu: "output-snap-new" },
+      { label: "TANF", current: "output-tanf-max-current", neu: "output-tanf-max-new" },
+      { label: "WIC", current: "output-wic-current", neu: "output-wic-new" },
+    ];
+    for (let i = 0; i < programs.length; i++) {
+      const p = programs[i];
+      rows.push(["Summary", p.label, textOf(p.current), textOf(p.neu), ""]);
+    }
+    return rows;
+  }
+
+  function escapeHtml(value) {
+    return String(value == null ? "" : value)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;");
+  }
+
+  function exportBasenameForToday() {
+    const d = new Date();
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth() + 1).padStart(2, "0");
+    const dd = String(d.getDate()).padStart(2, "0");
+    return "benefits-cliff-export-" + yyyy + "-" + mm + "-" + dd;
+  }
+
+  function formatExportDateLabel() {
+    try {
+      return new Date().toLocaleDateString(undefined, {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      });
+    } catch (e) {
+      return new Date().toDateString();
+    }
+  }
+
+  function buildExportPdfHtml(inputRows, summaryRows) {
+    const totals = [];
+    const programs = [];
+    for (let i = 0; i < summaryRows.length; i++) {
+      const row = summaryRows[i];
+      if (row[4] !== "") totals.push(row);
+      else programs.push(row);
+    }
+
+    let inputsBody = "";
+    for (let i = 0; i < inputRows.length; i++) {
+      const value = inputRows[i][2];
+      inputsBody +=
+        "<tr><th scope=\"row\">" +
+        escapeHtml(inputRows[i][1]) +
+        "</th><td>" +
+        escapeHtml(value === "" ? "—" : value) +
+        "</td></tr>";
+    }
+
+    let totalsBody = "";
+    for (let i = 0; i < totals.length; i++) {
+      const row = totals[i];
+      const highlight = row[1] === "Overall resources" ? " class=\"row-highlight\"" : "";
+      totalsBody +=
+        "<tr" +
+        highlight +
+        "><th scope=\"row\">" +
+        escapeHtml(row[1]) +
+        "</th><td class=\"num\">" +
+        escapeHtml(row[2]) +
+        "</td><td class=\"num\">" +
+        escapeHtml(row[3]) +
+        "</td><td class=\"num\">" +
+        escapeHtml(row[4]) +
+        "</td></tr>";
+    }
+
+    let programsBody = "";
+    for (let i = 0; i < programs.length; i++) {
+      const row = programs[i];
+      programsBody +=
+        "<tr><th scope=\"row\">" +
+        escapeHtml(row[1]) +
+        "</th><td class=\"num\">" +
+        escapeHtml(row[2]) +
+        "</td><td class=\"num\">" +
+        escapeHtml(row[3]) +
+        "</td></tr>";
+    }
+
+    const title = exportBasenameForToday();
+    return (
+      "<!DOCTYPE html><html lang=\"en\"><head><meta charset=\"UTF-8\" />" +
+      "<title>" +
+      escapeHtml(title) +
+      "</title><style>" +
+      "*,*::before,*::after{box-sizing:border-box}" +
+      "body{margin:0;padding:32px;font-family:'Segoe UI',system-ui,-apple-system,Arial,sans-serif;" +
+      "color:#1c1c1a;background:#fff;line-height:1.45;font-size:12.5px}" +
+      ".report{max-width:760px;margin:0 auto}" +
+      ".masthead{border-bottom:3px solid #0057a1;padding-bottom:16px;margin-bottom:28px}" +
+      ".masthead h1{margin:0 0 6px;font-size:22px;font-weight:650;letter-spacing:-0.02em;color:#0057a1}" +
+      ".masthead p{margin:0;color:#5c5d5f;font-size:12px}" +
+      "h2{margin:0 0 12px;font-size:14px;font-weight:650;letter-spacing:0.02em;" +
+      "text-transform:uppercase;color:#004480}" +
+      "section{margin-bottom:28px}" +
+      "table{width:100%;border-collapse:collapse}" +
+      "th,td{padding:8px 10px;border-bottom:1px solid #e8e9e5;text-align:left;vertical-align:top}" +
+      "thead th{background:#eef5fb;color:#004480;font-weight:600;border-bottom:1px solid #c2c3be}" +
+      "tbody th{font-weight:500;color:#5c5d5f;width:42%}" +
+      "td{font-variant-numeric:tabular-nums}" +
+      ".row-highlight th,.row-highlight td{background:#f3f7fb;font-weight:600;color:#1c1c1a}" +
+      ".num{text-align:right;white-space:nowrap}" +
+      "@media print{body{padding:0} section{break-inside:avoid}}" +
+      "</style></head><body><div class=\"report\">" +
+      "<header class=\"masthead\">" +
+      "<h1>Benefits Cliff Calculator</h1>" +
+      "<p>Export dated " +
+      escapeHtml(formatExportDateLabel()) +
+      "</p></header>" +
+      "<section><h2>Household inputs</h2>" +
+      "<table><thead><tr><th scope=\"col\">Field</th><th scope=\"col\">Value</th></tr></thead>" +
+      "<tbody>" +
+      inputsBody +
+      "</tbody></table></section>" +
+      "<section><h2>Monthly household totals</h2>" +
+      "<table><thead><tr><th scope=\"col\">Metric</th>" +
+      "<th class=\"num\" scope=\"col\">Current</th>" +
+      "<th class=\"num\" scope=\"col\">New</th>" +
+      "<th class=\"num\" scope=\"col\">Change</th></tr></thead>" +
+      "<tbody>" +
+      totalsBody +
+      "</tbody></table></section>" +
+      "<section><h2>Benefits by program</h2>" +
+      "<table><thead><tr><th scope=\"col\">Program</th>" +
+      "<th class=\"num\" scope=\"col\">Current</th>" +
+      "<th class=\"num\" scope=\"col\">New</th></tr></thead>" +
+      "<tbody>" +
+      programsBody +
+      "</tbody></table></section>" +
+      "</div></body></html>"
+    );
+  }
+
+  function exportSummaryToPdf() {
+    const html = buildExportPdfHtml(collectExportInputs(), collectExportSummary());
+    const reportWindow = window.open("", "_blank");
+    if (!reportWindow) {
+      window.alert("Please allow pop-ups to export the PDF report.");
+      return;
+    }
+    reportWindow.document.open();
+    reportWindow.document.write(html);
+    reportWindow.document.close();
+    reportWindow.focus();
+    setTimeout(function () {
+      reportWindow.print();
+    }, 250);
+  }
+
   function bindFormListeners() {
     const resetBtn = document.getElementById("reset-form");
     if (resetBtn) {
       resetBtn.addEventListener("click", resetFormToDefaults);
+    }
+
+    const exportBtn = document.getElementById("export-summary");
+    if (exportBtn) {
+      exportBtn.addEventListener("click", exportSummaryToPdf);
     }
 
     $("num-adults").addEventListener("input", onHouseholdCountChange);
