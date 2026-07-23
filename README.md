@@ -122,7 +122,11 @@ npm run build-tanf-data
 npm run build-wic-data
 ```
 
-The workbook is not checked into this repository; place it at the path above before running build scripts.
+The workbook is not checked into this repository; place it at the path above before running build scripts. Medicaid spend rates use a separate workbook path (see below).
+
+## Maintaining the calculator
+
+When program rules, rates, or workbook formulas change, see **[MAINTENANCE.md](MAINTENANCE.md)** for per-program checklists: which Excel sheets/cells feed each build, which `lookup-data.js` / `calculator.js` files to touch, cross-dependencies (TANF-VIEW, Medicaid thresholds via Marketplace), and which verify scripts to run.
 
 ## Tech stack
 
