@@ -12,8 +12,8 @@ const run = new Function(
 );
 const r = run();
 const ok =
-  r.n212 === 3024.5 &&
-  r.n214 === 3024.5 &&
+  r.n212 === 3133.5 &&
+  r.n214 === 3133.5 &&
   r.highEarn === 0;
 console.log(r, ok ? "OK" : "FAIL");
 if (!ok) process.exit(1);

@@ -13,6 +13,12 @@ export const wbPath = join(
   "data/source/Benefits Cliff Calculator with disability + SSI draft FY2026 FPL_copy.xlsx"
 );
 
+/** Medicaid spend rates (C148/C152) — updated 7/22/2026 workbook. */
+export const medicaidWbPath = join(
+  root,
+  "data/source/Benefits Cliff Calculator Medicaid updates_current_7_22_2026.xlsx"
+);
+
 export const src = {
   configData: join(root, "src/config/data.js"),
   childCareLookup: join(root, "src/programs/child-care/lookup-data.js"),

@@ -16,6 +16,7 @@
     "verify-tc7": "node tools/verify/tc/verify-tc7.mjs",
     "verify-tc8": "node tools/verify/tc/verify-tc8.mjs",
     "verify-tc1": "node tools/verify/tc/verify-tc1.mjs",
+    "verify-albemarle-snap-1child": "node tools/verify/tc/verify-albemarle-snap-1child.mjs",
     "diagnose-tc7": "node tools/verify/tc/diagnose-tc7.mjs",
     "build-child-care-data": "node tools/build/build-childCareLookupData.mjs",
     "build-eitc-data": "node tools/build/build-eitcLookupData.mjs",

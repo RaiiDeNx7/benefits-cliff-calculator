@@ -1,7 +1,8 @@
 /**
- * Auto-generated from FY2026 workbook (Program specific data C148, C152).
- * Regenerate: node scripts/build-medicaidLookupData.mjs
+ * Auto-generated from Medicaid updates workbook 7/22/2026
+ * (Program specific data C148, C152).
+ * Regenerate: npm run build-medicaid-data
  */
 
-const MEDICAID_ADULT_SPEND_MONTHLY = 517.25;
-const MEDICAID_CHILD_SPEND_MONTHLY = 318.5;
+const MEDICAID_ADULT_SPEND_MONTHLY = 536.125;
+const MEDICAID_CHILD_SPEND_MONTHLY = 329.6666666666667;

@@ -1,12 +1,13 @@
 /**
- * Builds medicaid lookup data from FY2026 workbook Program specific data.
- * Run: npm run build:medicaid-data
+ * Builds medicaid lookup data from the 7/22/2026 Medicaid updates workbook
+ * (Program specific data C148, C152).
+ * Run: npm run build-medicaid-data
  */
 import XLSX from "xlsx";
 import { writeFileSync } from "fs";
-import { wbPath, src } from "../lib/paths.mjs";
+import { medicaidWbPath, src } from "../lib/paths.mjs";
 
-const wb = XLSX.readFile(wbPath);
+const wb = XLSX.readFile(medicaidWbPath);
 const prog = wb.Sheets["Program specific data"];
 
 const adultCell = prog["C148"];
@@ -21,8 +22,9 @@ const child =
     : 0;
 
 const body = `/**
- * Auto-generated from FY2026 workbook (Program specific data C148, C152).
- * Regenerate: npm run build:medicaid-data
+ * Auto-generated from Medicaid updates workbook 7/22/2026
+ * (Program specific data C148, C152).
+ * Regenerate: npm run build-medicaid-data
  */
 
 const MEDICAID_ADULT_SPEND_MONTHLY = ${JSON.stringify(adult)};
