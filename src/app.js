@@ -31,6 +31,67 @@
     "output-wic-new",
   ];
 
+  /** Pie chart slices for overall resources (income + each program). */
+  const RESOURCE_CHART_SEGMENTS = [
+    { key: "income", label: "Earned income", color: "#0057a1", kind: "income" },
+    {
+      key: "child_care",
+      label: "Child care subsidy",
+      color: "#0d9488",
+      currentId: "output-cc-subsidy-current",
+      newId: "output-cc-subsidy-new",
+    },
+    {
+      key: "eitc",
+      label: "EITC + VA",
+      color: "#ca8a04",
+      currentId: "output-eitc-current",
+      newId: "output-eitc-new",
+    },
+    {
+      key: "marketplace",
+      label: "Marketplace subsidy",
+      color: "#0369a1",
+      currentId: "output-marketplace-current",
+      newId: "output-marketplace-new",
+    },
+    {
+      key: "medicaid",
+      label: "Medicaid",
+      color: "#4d7c8a",
+      currentId: "output-medicaid-current",
+      newId: "output-medicaid-new",
+    },
+    {
+      key: "hcv",
+      label: "HCV program",
+      color: "#3f6f4e",
+      currentId: "output-hcv-current",
+      newId: "output-hcv-new",
+    },
+    {
+      key: "snap",
+      label: "SNAP",
+      color: "#b45309",
+      currentId: "output-snap-current",
+      newId: "output-snap-new",
+    },
+    {
+      key: "tanf",
+      label: "TANF",
+      color: "#7c5e48",
+      currentId: "output-tanf-max-current",
+      newId: "output-tanf-max-new",
+    },
+    {
+      key: "wic",
+      label: "WIC",
+      color: "#5c5d5f",
+      currentId: "output-wic-current",
+      newId: "output-wic-new",
+    },
+  ];
+
   /** @param {string} id */
   function $(id) {
     const el = document.getElementById(id);
@@ -541,6 +602,171 @@
     return sum;
   }
 
+  function resourceChartSegmentsForScenario(scenario) {
+    const income =
+      scenario === "new" ? monthlyEarnedNewExact() : monthlyEarnedCurrentExact();
+    const segments = [];
+    for (let i = 0; i < RESOURCE_CHART_SEGMENTS.length; i++) {
+      const def = RESOURCE_CHART_SEGMENTS[i];
+      let amount = 0;
+      if (def.kind === "income") {
+        amount = income;
+      } else {
+        const id = scenario === "new" ? def.newId : def.currentId;
+        const el = document.getElementById(id);
+        amount = el ? parseDisplayedCurrency(el.textContent) : 0;
+      }
+      if (amount > 0) {
+        segments.push({
+          key: def.key,
+          label: def.label,
+          color: def.color,
+          amount: amount,
+        });
+      }
+    }
+    return segments;
+  }
+
+  function polarToCartesian(cx, cy, r, angleDeg) {
+    const rad = ((angleDeg - 90) * Math.PI) / 180;
+    return {
+      x: cx + r * Math.cos(rad),
+      y: cy + r * Math.sin(rad),
+    };
+  }
+
+  function describePieSlice(cx, cy, r, startAngle, endAngle) {
+    const start = polarToCartesian(cx, cy, r, endAngle);
+    const end = polarToCartesian(cx, cy, r, startAngle);
+    const largeArc = endAngle - startAngle > 180 ? 1 : 0;
+    return [
+      "M",
+      cx,
+      cy,
+      "L",
+      start.x,
+      start.y,
+      "A",
+      r,
+      r,
+      0,
+      largeArc,
+      0,
+      end.x,
+      end.y,
+      "Z",
+    ].join(" ");
+  }
+
+  function renderResourcesPieChart(svgId, legendId, titleId, scenario, label) {
+    const svg = document.getElementById(svgId);
+    const legend = document.getElementById(legendId);
+    if (!svg || !legend) return;
+
+    const segments = resourceChartSegmentsForScenario(scenario);
+    let total = 0;
+    for (let i = 0; i < segments.length; i++) total += segments[i].amount;
+
+    const titleText =
+      label +
+      " overall resources breakdown" +
+      (total > 0 ? " totaling " + formatAggregateAmount(total) : "");
+
+    while (svg.lastChild) svg.removeChild(svg.lastChild);
+    legend.innerHTML = "";
+
+    const title = document.createElementNS("http://www.w3.org/2000/svg", "title");
+    title.id = titleId;
+    title.textContent = titleText;
+    svg.appendChild(title);
+
+    if (total <= 0) {
+      const empty = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+      empty.setAttribute("cx", "60");
+      empty.setAttribute("cy", "60");
+      empty.setAttribute("r", "48");
+      empty.setAttribute("fill", "#e8e9e5");
+      empty.setAttribute("stroke", "#d8d9d4");
+      empty.setAttribute("stroke-width", "1");
+      svg.appendChild(empty);
+
+      const emptyItem = document.createElement("li");
+      emptyItem.className = "resources-chart__legend-item resources-chart__legend-item--empty";
+      emptyItem.textContent = "No resources to display yet.";
+      legend.appendChild(emptyItem);
+      return;
+    }
+
+    if (segments.length === 1) {
+      const full = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+      full.setAttribute("cx", "60");
+      full.setAttribute("cy", "60");
+      full.setAttribute("r", "48");
+      full.setAttribute("fill", segments[0].color);
+      svg.appendChild(full);
+    } else {
+      let angle = 0;
+      for (let i = 0; i < segments.length; i++) {
+        const seg = segments[i];
+        const sweep = (seg.amount / total) * 360;
+        // Tiny gap avoidance: treat near-full remainder as closing the circle.
+        const endAngle = i === segments.length - 1 ? 360 : angle + sweep;
+        const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+        path.setAttribute("d", describePieSlice(60, 60, 48, angle, endAngle));
+        path.setAttribute("fill", seg.color);
+        svg.appendChild(path);
+        angle = endAngle;
+      }
+    }
+
+    for (let i = 0; i < segments.length; i++) {
+      const seg = segments[i];
+      const pct = Math.round((seg.amount / total) * 1000) / 10;
+      const item = document.createElement("li");
+      item.className = "resources-chart__legend-item";
+
+      const swatch = document.createElement("span");
+      swatch.className = "resources-chart__swatch";
+      swatch.style.backgroundColor = seg.color;
+      swatch.setAttribute("aria-hidden", "true");
+
+      const text = document.createElement("span");
+      text.className = "resources-chart__legend-text";
+
+      const nameEl = document.createElement("span");
+      nameEl.className = "resources-chart__legend-label";
+      nameEl.textContent = seg.label;
+
+      const valueEl = document.createElement("span");
+      valueEl.className = "resources-chart__legend-value";
+      valueEl.textContent = formatAggregateAmount(seg.amount) + " (" + pct + "%)";
+
+      text.appendChild(nameEl);
+      text.appendChild(valueEl);
+      item.appendChild(swatch);
+      item.appendChild(text);
+      legend.appendChild(item);
+    }
+  }
+
+  function updateResourcesCharts() {
+    renderResourcesPieChart(
+      "resources-chart-current",
+      "resources-chart-current-legend",
+      "resources-chart-current-title",
+      "current",
+      "Current"
+    );
+    renderResourcesPieChart(
+      "resources-chart-new",
+      "resources-chart-new-legend",
+      "resources-chart-new-title",
+      "new",
+      "New"
+    );
+  }
+
   function updateAggregateOutputs() {
     const benefitsCur = sumBenefitOutputs(BENEFIT_OUTPUT_IDS_CURRENT);
     const benefitsNew = sumBenefitOutputs(BENEFIT_OUTPUT_IDS_NEW);
@@ -564,6 +790,7 @@
       benefitsNew + incomeNew,
       formatAggregateAmount
     );
+    updateResourcesCharts();
   }
 
   function updateHcvPanel() {

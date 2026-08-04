@@ -1911,3 +1911,226 @@ input:disabled {
 }
 
 
+
+.outputs-resources-charts {
+
+  margin-top: 1.5rem;
+
+}
+
+
+
+.resources-charts {
+
+  display: grid;
+
+  grid-template-columns: 1fr;
+
+  gap: 1.25rem;
+
+}
+
+
+
+@media (min-width: 720px) {
+
+  .resources-charts {
+
+    grid-template-columns: 1fr 1fr;
+
+    gap: 1.5rem;
+
+  }
+
+}
+
+
+
+.resources-chart {
+
+  margin: 0;
+
+  padding: 1.15rem;
+
+  border: 1px solid var(--border);
+
+  border-radius: var(--radius-sm);
+
+  background: var(--card);
+
+  box-shadow: var(--shadow-sm);
+
+}
+
+
+
+.resources-chart__caption {
+
+  margin: 0 0 0.85rem;
+
+  font-size: 0.75rem;
+
+  font-weight: 700;
+
+  letter-spacing: 0.05em;
+
+  text-transform: uppercase;
+
+  color: var(--vdss-gray-dark);
+
+}
+
+
+
+.resources-chart:first-child .resources-chart__caption {
+
+  color: var(--vdss-blue);
+
+}
+
+
+
+.resources-chart__body {
+
+  display: flex;
+
+  flex-direction: column;
+
+  align-items: center;
+
+  gap: 1rem;
+
+}
+
+
+
+@media (min-width: 480px) {
+
+  .resources-chart__body {
+
+    flex-direction: row;
+
+    align-items: flex-start;
+
+    gap: 1.15rem;
+
+  }
+
+}
+
+
+
+.resources-chart__svg {
+
+  flex: 0 0 auto;
+
+  width: 7.5rem;
+
+  height: 7.5rem;
+
+  display: block;
+
+}
+
+
+
+.resources-chart__legend {
+
+  list-style: none;
+
+  margin: 0;
+
+  padding: 0;
+
+  width: 100%;
+
+  min-width: 0;
+
+  display: flex;
+
+  flex-direction: column;
+
+  gap: 0.45rem;
+
+}
+
+
+
+.resources-chart__legend-item {
+
+  display: flex;
+
+  align-items: flex-start;
+
+  gap: 0.5rem;
+
+  font-size: 0.8125rem;
+
+  line-height: 1.35;
+
+  color: var(--text);
+
+}
+
+
+
+.resources-chart__legend-item--empty {
+
+  color: var(--muted);
+
+  font-style: italic;
+
+}
+
+
+
+.resources-chart__swatch {
+
+  flex: 0 0 auto;
+
+  width: 0.75rem;
+
+  height: 0.75rem;
+
+  margin-top: 0.2rem;
+
+  border-radius: 2px;
+
+}
+
+
+
+.resources-chart__legend-text {
+
+  display: flex;
+
+  flex-direction: column;
+
+  gap: 0.1rem;
+
+  min-width: 0;
+
+}
+
+
+
+.resources-chart__legend-label {
+
+  font-weight: 600;
+
+  color: var(--text);
+
+}
+
+
+
+.resources-chart__legend-value {
+
+  font-variant-numeric: tabular-nums;
+
+  color: var(--muted);
+
+  font-size: 0.75rem;
+
+}
+
