@@ -507,29 +507,23 @@
     return Math.min(disabled, children);
   }
 
-  /** TIP D61 — non-parent adults excluded from TANF AU parent count (beyond first). */
+  /**
+   * TIP D61 / TANF-VIEW C6 — disabled adult SSI recipients who are also parents.
+   * Reduces caretaker count in the TANF AU (D6 = parentYes − D61); when D6 is 0,
+   * TANF earned income is treated as $0 (SSI caretakers are not in the AU).
+   */
   function getTipD61FromForm() {
-    const numAdults = clampCount($("num-adults").value);
-    const parentYesCount = getTanfParentYesCountFromForm();
-    if (parentYesCount === 0) return 0;
+    if (!isRadioYes("adults_disabled") || !isRadioYes("adult_ssi_income")) return 0;
+    const el = document.getElementById("adult-ssi-parent-count");
+    if (!(el instanceof HTMLInputElement)) return 0;
+    return clampCount(el.value);
+  }
 
-    // Workbook: only non-elderly (under 62) non-parent adults count toward D61.
-    let nonParentUnder62 = 0;
-    for (let i = 0; i < numAdults; i++) {
-      const parentEl = document.querySelector(
-        'input[name="adult_parent_' + i + '"]:checked'
-      );
-      const isParent =
-        parentEl instanceof HTMLInputElement && parentEl.value === "yes";
-      if (isParent) continue;
-      const ageEl = document.getElementById("adult-age-" + i);
-      const age = ageEl ? parseAgeForCalc(ageEl.value) : 0;
-      if (age > 0 && age < 62) nonParentUnder62 += 1;
-    }
-
-    let tipD61 = Math.max(0, nonParentUnder62 - 1);
-    tipD61 = Math.min(tipD61, parentYesCount - 1);
-    return tipD61;
+  /** HCV I2 / TIP F59 — non-elderly disabled adults who are not head/spouse. */
+  function getHcvDisabilityF59FromForm() {
+    if (!isRadioYes("adults_disabled")) return 0;
+    const el = document.getElementById("disabled-adult-non-elderly-not-head");
+    return el instanceof HTMLInputElement ? clampCount(el.value) : 0;
   }
 
   /**
@@ -1300,6 +1294,7 @@
       adultAges: getAdultAgesFromForm(),
       monthlySocialSecurity: getParentYesSocialSecurityMonthly(),
       monthlySsi: getAllSsiMonthlyTotal(),
+      disabilityF59: getHcvDisabilityF59FromForm(),
       tanfL: tanfPath.tanfL,
       tanfT: tanfPath.tanfT,
       bedrooms: parseInt(bedrooms, 10),
@@ -1882,7 +1877,10 @@
     });
 
     document.querySelectorAll('input[name="adults_disabled"]').forEach(function (el) {
-      el.addEventListener("change", updateDisabilityPanels);
+      el.addEventListener("change", function () {
+        updateDisabilityPanels();
+        refreshBenefitIncomeFromForm();
+      });
     });
     document.querySelectorAll('input[name="children_disabled"]').forEach(function (el) {
       el.addEventListener("change", function () {

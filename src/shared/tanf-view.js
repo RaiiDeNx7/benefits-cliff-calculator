@@ -40,8 +40,8 @@
   /**
    * G6 — assistance-unit size for lookups:
    *   (parentYesCount − tipD61) + (children − childrenNotInTanfAu)
-   * tipD61 / tipD66 exclude certain non-parent adults and disabled children
-   * from the AU, matching the Total income package sheet.
+   * tipD61 = TIP D61 (disabled SSI parents excluded from AU caretakers);
+   * tipD66 = TIP D66 (disabled SSI children excluded from AU).
    */
   function tanfG6Key(p) {
     const d6 = tanfParentYesCount(p) - p.tipD61;
@@ -112,7 +112,7 @@
    *
    * Letter variables mirror Excel column letters on the TANF-VIEW row:
    *
-   *   B  earned (0 if no parent-yes adults remain after D61)
+   *   B  earned (0 if no parent-yes adults remain after excluding SSI parents D61)
    *   C  parent Social Security (TIP D80)
    *   D  gross = B + C
    *   E  passes max-gross test (D ≤ F2)
@@ -144,7 +144,7 @@
    * @returns {{ L: number, T: number }}
    */
   function computeTanfViewRowLT(p) {
-    // D6 = parent caretakers remaining after excluding tipD61 non-parent adults.
+    // D6 = parent caretakers remaining after excluding tipD61 SSI parents.
     const d6 = tanfParentYesCount(p) - p.tipD61;
     const g6k = tanfG6Key(p);
     const a3 = p.tanfRegionGroupA3 === 2 ? 2 : 1;

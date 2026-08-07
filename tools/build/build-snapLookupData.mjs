@@ -1,9 +1,12 @@
 /**
  * Builds src/programs/snap/lookup-data.js from FY2026 workbook.
  * - Program specific data A72:C79 — utility / SUA by household
+ * - Program specific data A72:E79 col D — max shelter deduction (L2)
  * - Program specific data A85:D92 — gross / net income tests
  * - Program specific data A97:B104 — max allotment
- * - SNAP!L2 — shelter cap
+ *
+ * Shelter cap is read from Program specific data (col D), not SNAP!L2.
+ * SNAP!L2 is a VLOOKUP whose cached .v can lag behind table updates.
  *
  * Run: npm run build-snap-data
  */
@@ -13,11 +16,13 @@ import { wbPath, src } from "../lib/paths.mjs";
 
 const wb = XLSX.readFile(wbPath);
 const prog = wb.Sheets["Program specific data"];
-const snapSheet = wb.Sheets["SNAP"];
-const snapL2 =
-  snapSheet["L2"] && snapSheet["L2"].v != null && snapSheet["L2"].v !== ""
-    ? Number(snapSheet["L2"].v)
-    : 712;
+// Prefer table col D (authoritative). SNAP!L2 cache may be stale until Excel recalcs.
+const shelterCaps = [];
+for (let r = 72; r <= 79; r++) {
+  const d = prog["D" + r];
+  if (d && d.v != null && d.v !== "") shelterCaps.push(Number(d.v));
+}
+const snapL2 = shelterCaps.length ? shelterCaps[0] : 744;
 
 const snapGrossNetRows = [];
 for (let r = 85; r <= 92; r++) {
@@ -54,7 +59,10 @@ for (let r = 72; r <= 79; r++) {
 }
 
 const body = `/**
- * Auto-generated from FY2026 workbook (Program specific data + SNAP!L2).
+ * SNAP lookup tables (gross/net tests, max allotment, utilities/SUA, shelter cap L2).
+ * Used by src/programs/snap/calculator.js (computeSnapV).
+ * Auto-generated from FY2026 workbook (Program specific data).
+ * Shelter cap from Program specific data col D (not SNAP!L2 cache).
  * Regenerate: npm run build-snap-data
  */
 

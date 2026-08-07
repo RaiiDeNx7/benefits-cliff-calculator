@@ -111,7 +111,7 @@
     const j2net = snapG.netCountableLessThan;
     const g2gross = snapG.grossLessThan;
     const h2heat = lookupSnapH2HeatingCooling(hh);
-    const snapL2Cap = typeof SNAP_SHELTER_CAP_L2 === "number" ? SNAP_SHELTER_CAP_L2 : 712;
+    const snapL2Cap = typeof SNAP_SHELTER_CAP_L2 === "number" ? SNAP_SHELTER_CAP_L2 : 744;
     const headerI2 = snapHeaderI2Utility(p);
 
     // C205 probe: run TANF at a fixed high annual income (~$99,500).
@@ -155,7 +155,7 @@
     // oYes: alternate eligibility when elderly/disabled and K under the net test.
     const oYes = deSum > 0 && k < j2net;
 
-    // No elderly/disabled: excess shelter capped at L2 (default $712).
+    // No elderly/disabled: excess shelter capped at L2 (default $744).
     let q = 0;
     if (deSum === 0) {
       if (nShelterTotal < snapL2Cap && nShelterTotal - pHalf > 0) {

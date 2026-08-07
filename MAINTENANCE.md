@@ -2,7 +2,7 @@
 
 Guide for updating the calculator when Virginia program rules, rates, or workbook formulas change. For how to run the app, see [README.md](README.md).
 
-## How updates flow
+## How updates flow                                
 
 ```
 Excel in data/source/
@@ -88,7 +88,7 @@ These trip up updates more often than any single program:
 
 | Step | What to touch |
 |------|----------------|
-| **Source** | Main `wbPath` — `Program specific data` **A72:C79** (utility/SUA), **A85:D92** (gross/net), **A97:B104** (max allotment); sheet `SNAP` cell **L2** (shelter cap) |
+| **Source** | Main `wbPath` — `Program specific data` **A72:C79** (utility/SUA), **A72:E79** col **D** (max shelter / L2), **A85:D92** (gross/net), **A97:B104** (max allotment). Do not use cached `SNAP!L2` — it can lag the table. |
 | **Rebuild** | `npm run build-snap-data` → [`tools/build/build-snapLookupData.mjs`](tools/build/build-snapLookupData.mjs) |
 | **Generated / runtime** | [`src/programs/snap/lookup-data.js`](src/programs/snap/lookup-data.js); calc also needs TANF lookup + [`src/shared/tanf-view.js`](src/shared/tanf-view.js) |
 | **If logic changes** | [`src/programs/snap/calculator.js`](src/programs/snap/calculator.js) (`computeSnapV`, sheet V209/V211) |
