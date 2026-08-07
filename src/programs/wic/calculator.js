@@ -1,6 +1,17 @@
 /**
- * WIC sheet monthly benefit F211 / F213.
- * F = IF(E < I2, G2 * per-person value, 0) with E = B + H2 + D.
+ * WIC — Special Supplemental Nutrition Program for Women, Infants, and Children.
+ *
+ * Mirrors WIC sheet monthly benefit F211 / F213.
+ *
+ * What the formula does:
+ *   1. Countable income E = earned + parent SS (H2) + MAX(TANF L, T).
+ *   2. If E is under the household-size income limit (I2), benefit =
+ *      (eligible person count G2) × (per-person monthly value).
+ *   3. Otherwise $0.
+ *
+ * Eligible persons (G2) in the app are young children in infant–preschool
+ * age bands (teen/school-age bands are excluded from the count).
+ *
  * @requires src/programs/wic/lookup-data.js
  */
 (function (global) {
@@ -31,11 +42,14 @@
     });
     const limitRow = limRow || rows[rows.length - 1];
     const i2 = limitRow ? limitRow.limit : 0;
+
+    // E = earned + SS + TANF cash (workbook counts TANF as unearned for the test).
     const e =
       (Number(p.monthlyEarnedWicB) || 0) +
       (Number(p.wicUnearnedH2) || 0) +
       (Number(p.tanfMaxLTForWicD) || 0);
     if (e >= i2) return 0;
+
     const per =
       typeof WIC_VALUE_PER_WIC_PERSON_MONTHLY === "number"
         ? WIC_VALUE_PER_WIC_PERSON_MONTHLY

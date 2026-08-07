@@ -1,4 +1,6 @@
 /**
+ * Child care subsidy lookups (FPL, SMI/group income limits, locality group + rates).
+ * Used by src/programs/child-care/calculator.js.
  * Auto-generated from "Benefits Cliff Calculator with disability + SSI draft FY2026 FPL_copy - Copy.xlsx"
  * (Program specific data + Location specific data AG–AK, AM).
  * Regenerate: npm run build:child-care-data

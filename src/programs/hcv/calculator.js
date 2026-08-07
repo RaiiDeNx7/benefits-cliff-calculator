@@ -1,16 +1,23 @@
 /**
- * Housing Choice Voucher program monthly subsidy — Excel `Housing Voucher` sheet **Q209** / **Q211**.
+ * Housing Choice Voucher (HCV) — monthly program subsidy.
  *
- * Q = IF(AND(G="Yes", A14, P−N>0), P−N, 0)
- * F = B + C + D + E (monthly gross + TANF + SS + SSI parts; E defaults 0)
- * G = IF(F < L2_monthly, "Yes", "No") with L2 from Location AMI 80% / 12 by household size
- * H deduction row = 40*(dependents + F59); F59 default 0
- * I row = IF(H2_elderCount + F59 > 0, 33.33, 0) — same F59 as sheet $I$2
- * J = max(0, F − H_row − I_row); K=0.3*J; L=0.1*F; M=50; N=max(K,L,M); P=payment std by bedroom
+ * Mirrors Excel `Housing Voucher` sheet **Q209** / **Q211**.
  *
- * C209/C211 use TANF-VIEW L212/T212 vs L214/T214; app passes calculated TANF L/T from tanfView.js.
- * When qualified shelter is entered, subsidy is **min(P−N, GR−N)** with
- * **GR = min(P, max(shelter + max(util, SUA), min(F×α, P − pad)))** (α defaults to 1.825, pad to 75).
+ * What the formula does:
+ *   1. Gross income F = earned + MAX(TANF L,T) + parent SS + SSI.
+ *   2. Income test G: F must be under the locality’s 80% AMI monthly limit (L2)
+ *      for the household size.
+ *   3. Tenant payment N = max(30% of adjusted income, 10% of gross, $50).
+ *      Adjusted income J = F − $40×(dependents + disability) − $33.33 if
+ *      elderly (62+) or disabled is present.
+ *   4. Payment standard P from locality × bedroom count (1–4).
+ *   5. Subsidy Q = P − N (when positive and income-eligible).
+ *
+ * C209/C211 use TANF-VIEW L212/T212 vs L214/T214; app.js passes those L/T values.
+ *
+ * Note: The workbook also describes an optional gross-rent (GR) cap using
+ * shelter/utility/SUA. This implementation currently returns P−N only;
+ * shelter/utility params may be collected by the UI for future parity.
  *
  * @requires hcvLookupData.js (HCV_BY_LOCALITY)
  */
@@ -29,12 +36,14 @@
     return null;
   }
 
+  /** 80% AMI monthly income limit for household size 1–8. */
   function ami80MonthlyLimit(loc, householdSize) {
     var hh = Math.max(1, Math.min(8, Math.floor(Number(householdSize)) || 1));
     var row = loc.ami80MonthlyByHousehold[String(hh)];
     return row != null ? Number(row) : 0;
   }
 
+  /** PHA payment standard for 1–4 bedrooms (0 bedrooms → no subsidy). */
   function paymentStandard(loc, bedrooms) {
     var bed = Math.max(1, Math.min(4, Math.floor(Number(bedrooms)) || 0));
     if (!bed) return 0;
@@ -42,6 +51,7 @@
     return row != null ? Number(row) : 0;
   }
 
+  /** Count of adults age 62+ (HCV elderly deduction trigger). */
   function elderlyAdultCount(adultAges) {
     var n = 0;
     var ages = adultAges || [];
@@ -51,6 +61,7 @@
     return n;
   }
 
+  /** TANF cash counted in gross = larger of L and T paths. */
   function tanfMonthly(L, T) {
     return Math.max(Number(L) || 0, Number(T) || 0);
   }
@@ -89,24 +100,27 @@
     var bedrooms = Math.floor(Number(p.bedrooms) || 0);
     if (bedrooms < 1) return 0;
 
+    // F = gross monthly resources used for the AMI test and tenant share.
     var B = Number(p.monthlyEarned) || 0;
     var C = tanfMonthly(p.tanfL, p.tanfT);
     var D = Number(p.monthlySocialSecurity) || 0;
     var E = Number(p.monthlySsi) || 0;
     var F = B + C + D + E;
 
+    // Must be under 80% AMI monthly for household size.
     var L2 = ami80MonthlyLimit(loc, p.householdSize);
     if (F >= L2) return 0;
 
+    // Adjusted income and tenant payment (higher of 30% adj, 10% gross, $50).
     var f59 = Number(p.disabilityF59) || 0;
     var dependents = Math.max(0, Math.floor(Number(p.numDependents) || 0));
-    var H = 40 * (dependents + f59);
-    var I = elderlyAdultCount(p.adultAges) + f59 > 0 ? 33.33 : 0;
+    var H = 40 * (dependents + f59); // $40 dependent/disability deduction
+    var I = elderlyAdultCount(p.adultAges) + f59 > 0 ? 33.33 : 0; // elderly/disabled
     var J = Math.max(0, F - H - I);
     var K = 0.3 * J;
     var L = 0.1 * F;
     var M = 50;
-    var N = Math.max(K, L, M);
+    var N = Math.max(K, L, M); // tenant share
     var P = paymentStandard(loc, bedrooms);
     var rawPN = P - N;
     if (!(F < L2 && p.hcvSelected && rawPN > 0)) return 0;

@@ -1,4 +1,6 @@
 /**
+ * Medicaid monthly spend rates (adult / child). Income limits live in
+ * marketplace/lookup-data.js. Used by src/programs/medicaid/calculator.js.
  * Auto-generated from Medicaid updates workbook 7/22/2026
  * (Program specific data C148, C152).
  * Regenerate: npm run build-medicaid-data

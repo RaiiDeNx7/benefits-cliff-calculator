@@ -1,4 +1,6 @@
 /**
+ * WIC income limits by household size and per-person monthly value.
+ * Used by src/programs/wic/calculator.js.
  * Auto-generated from FY2026 workbook (Program specific data).
  * Regenerate: npm run build:wic-data
  */

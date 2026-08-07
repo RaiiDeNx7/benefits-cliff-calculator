@@ -1,4 +1,6 @@
 /**
+ * Federal EITC rate tables by # children × filing status (not MFJ / MFJ).
+ * Used by src/programs/eitc/calculator.js. VA 15% add-on is hard-coded there.
  * Auto-generated from "Benefits Cliff Calculator with disability + SSI draft FY2026 FPL_copy - Copy.xlsx"
  * Sheet "EITC Rates": rows A6:G13 (not MFJ) and A17:G24 (MFJ).
  * Regenerate: npm run build:eitc-data

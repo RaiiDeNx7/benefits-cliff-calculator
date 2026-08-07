@@ -1,4 +1,6 @@
 /**
+ * HCV lookups by locality: 80% AMI monthly limits (hh 1–8) and payment standards
+ * by bedroom. Used by src/programs/hcv/calculator.js.
  * Auto-generated (Location specific data: AMI 80% monthly by hh 1-8, payment std cols 25-29 by bedroom 1-5).
  * Regenerate: node scripts/build-hcvLookupData.mjs
  */

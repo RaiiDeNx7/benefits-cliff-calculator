@@ -1,5 +1,11 @@
 /**
- * Virginia localities (alphabetized) for Benefits Cliff Calculator.
+ * Shared static config for the Benefits Cliff Calculator UI.
+ *
+ * - LOCALITIES: Virginia cities/counties shown in the locality dropdown.
+ *   Keys must match locality names used in each program’s lookup-data.js.
+ * - BENEFIT_PROGRAMS: checkbox id + label for the eight benefit modules.
+ * - CHILD_AGE_BANDS: child age options; values map to child-care rate bands
+ *   and (for infant–preschool) the WIC eligible-person count.
  */
 const LOCALITIES = [
   "Accomack",

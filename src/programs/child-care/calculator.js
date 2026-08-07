@@ -1,10 +1,22 @@
 /**
- * Child care subsidy monthly amount — mirrors Excel "Child care subsidy" sheet
- * rows 208 (current / Total income package B90) and 210 (new / B91).
+ * Child Care Subsidy — monthly amount for Virginia’s child care assistance program.
+ *
+ * Mirrors Excel "Child care subsidy" sheet rows 208 (current / Total income
+ * package B90) and 210 (new / B91).
+ *
+ * What the formula does:
+ *   1. Gate: household must pass at least one of
+ *        F — earned under 85% SMI and has young children (infant–preschool),
+ *        G — earned under the locality’s group income limit, or
+ *        H — TANF L or T > 0 (linked to TANF-VIEW for this scenario).
+ *   2. Rate × hours: for each age band, locality weekly rate × child count × 20
+ *      (assumes 20 billable hours/week → monthly). Zeroed if earned ≥ 85% SMI.
+ *   3. Copay R: sliding scale by % FPL, then capped so the family does not pay
+ *      more than min(full copay, 5% of earned) or 3× per-child copay.
+ *   4. Subsidy S = sum of age-band amounts − R.
  *
  * Excel: S208 = IF(AND('Total income package'!$A$8=TRUE, OR(F208,G208,H208)),
  *                  SUM(J208:N208) - R208, 0)
- * Dependencies documented inline (F208..R208, sheet constants K2, M2, N2, C2:H2, A3).
  *
  * TANF column H uses TANF-VIEW!L212/T212 (row 208) and L214/T214 (row 210).
  * Pass tanfPathL / tanfPathT from those cells when available; otherwise 0 (H = "No").
@@ -29,6 +41,9 @@
     return null;
   }
 
+  /**
+   * FPL monthly (K2) and income-limit row (SMI 85% + group I–IV) for household size 1–8.
+   */
   function householdLookupRows(householdSize) {
     var hh = Math.max(1, Math.min(8, Math.floor(Number(householdSize)) || 1));
     var fpl =
@@ -42,6 +57,7 @@
     return { hh: hh, fpl: fpl, limits: lim };
   }
 
+  /** Locality group (1–4) → monthly income limit used by eligibility gate G. */
   function monthlyIncomeLimitForGroup(group, limitsRow) {
     var g = Number(group) || 1;
     if (g === 1) return limitsRow.groupILimit;
@@ -51,6 +67,7 @@
   }
 
   /**
+   * Young children for gate F (infant through preschool) — workbook C2..F2.
    * @param {object} counts — C2..H2 equivalents
    * @param {number} counts.infant
    * @param {number} counts.toddler
@@ -68,10 +85,15 @@
     );
   }
 
+  /** All children who can generate subsidy / count toward copay (includes school + teen incapable). */
   function sumAllSubsidyChildren(counts) {
     return sumYoungForF(counts) + (counts.school || 0) + (counts.teenIncapable || 0);
   }
 
+  /**
+   * Per-child monthly copay ladder by % of FPL (eFpl = total income / monthly FPL).
+   * Returns 0 if earned ≥ 85% SMI (N2). Multiplied later by child count.
+   */
   function monthlyCopayPerChild(B, N2, eFpl, sumCDEH) {
     if (B >= N2) return 0;
     if (eFpl > 3.5) return 375 * sumCDEH;
@@ -84,6 +106,7 @@
     return 0;
   }
 
+  /** Gate H: "Yes" if either TANF path L or T is positive. */
   function yesNoFromTanfPath(L, T) {
     var a = Number(L) || 0;
     var b = Number(T) || 0;
@@ -109,8 +132,8 @@
     if (!loc) return 0;
 
     var lk = householdLookupRows(p.householdSize);
-    var K2 = lk.fpl.monthlyFpl;
-    var N2 = lk.limits.smi85;
+    var K2 = lk.fpl.monthlyFpl; // monthly FPL for % FPL / copay
+    var N2 = lk.limits.smi85; // 85% State Median Income
     var M2 = monthlyIncomeLimitForGroup(loc.group, lk.limits);
 
     var c = p.counts || {};
@@ -123,18 +146,20 @@
 
     var B = Number(p.monthlyEarned) || 0;
     var Css = Number(p.monthlySocialSecurity) || 0;
-    var D = B + Css;
-    var E = K2 > 0 ? D / K2 : 0;
+    var D = B + Css; // total income for % FPL
+    var E = K2 > 0 ? D / K2 : 0; // multiple of FPL
 
     var sumCF = sumYoungForF(c);
     var sumAll = sumAllSubsidyChildren(c);
 
+    // Eligibility gates F / G / H — need at least one "Yes".
     var F208 = B < N2 && sumCF > 0 ? "Yes" : "No";
     var G208 = B < M2 ? "Yes" : "No";
     var H208 = yesNoFromTanfPath(p.tanfPathL, p.tanfPathT);
 
     if (!(F208 === "Yes" || G208 === "Yes" || H208 === "Yes")) return 0;
 
+    // Age-band monthly amounts: rate[i] × children × 20 hours. Zero if over SMI 85%.
     var rates = loc.rates;
     var J =
       (B > N2 ? 0 : rates[0] * C2) * 20;
@@ -143,6 +168,9 @@
     var M = (B > N2 ? 0 : rates[3] * F2) * 20;
     var Ncol = (B > N2 ? 0 : rates[4] * (G2 + H2)) * 20;
 
+    // Copay cap: R = min(O, P) unless that exceeds Q, then Q.
+    //   I = sliding per-child copay total, O = I * children (same as I here),
+    //   P = 5% of earned, Q = 3 × per-child unit.
     var I = monthlyCopayPerChild(B, N2, E, sumAll);
     var O = I * sumAll;
     var P = B * 0.05;

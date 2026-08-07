@@ -1,7 +1,17 @@
 /**
- * Medicaid sheet monthly total N212 / N214 (L212+M212 and L214+M214).
- * Uses MEDICAID_MARKETPLACE_THRESHOLDS_BY_HOUSEHOLD (J/H/L) from marketplaceLookupData.js
- * and spend rates from medicaidLookupData.js (Program C148, C152).
+ * Medicaid — estimated monthly program “spend” value (not a cash payment).
+ *
+ * Mirrors Medicaid sheet N212 / N214 = L + M (adult value + child value).
+ *
+ * What the formula does:
+ *   1. Subtract the Medicaid income disregard (H) from monthly earned → E.
+ *   2. If E is under the adult Medicaid limit (J), credit adults × adult rate.
+ *   3. If E is under the child Medicaid limit (L), credit children × child rate.
+ *   4. Return the sum (N). Used as the cliff “value” of Medicaid coverage.
+ *
+ * Income limits (J / H / L by household size) live in marketplace lookup data
+ * (MEDICAID_MARKETPLACE_THRESHOLDS_BY_HOUSEHOLD). Spend rates are in
+ * medicaid/lookup-data.js (Program C148 / C152).
  */
 
 (function (global) {
@@ -46,14 +56,15 @@
         ? MEDICAID_CHILD_SPEND_MONTHLY
         : 0;
 
+    // Countable income after disregard; separate adult vs child income tests.
     const e = Math.max(0, p.monthlyEarned - row.hDisregard);
     const m2 = p.numAdults * adultRate;
     const p2 = p.numChildren * childRate;
 
     let l212 = 0;
-    if (e < row.jLimitMedicaid) l212 = m2;
+    if (e < row.jLimitMedicaid) l212 = m2; // adult coverage value
     let m212 = 0;
-    if (e < row.lLimitMedicaid) m212 = p2;
+    if (e < row.lLimitMedicaid) m212 = p2; // child coverage value
     return l212 + m212;
   }
 

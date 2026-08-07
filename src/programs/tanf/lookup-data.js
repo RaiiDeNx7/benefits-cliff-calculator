@@ -1,4 +1,6 @@
 /**
+ * TANF / TANF-VIEW lookup tables (standard deduction, 150% FPL, SOA, max gross,
+ * I2 caps, locality → region group A3). Used by src/shared/tanf-view.js.
  * Auto-generated from FY2026 workbook (Program + Location col B for TANF A3).
  * Regenerate: npm run build:tanf-data
  */

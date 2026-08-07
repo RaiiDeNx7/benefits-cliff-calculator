@@ -1,3 +1,32 @@
+/**
+ * Benefits Cliff Calculator — UI orchestration.
+ *
+ * This file wires the form to the eight program calculators under src/programs/*.
+ * It does not contain benefit formulas; those live in each program’s calculator.js
+ * (plus shared TANF-VIEW math in src/shared/tanf-view.js).
+ *
+ * Typical refresh path after any input change:
+ *   refreshCalculatorAfterInputChange()
+ *     → update panels / counts / utility state
+ *     → updateIncomeTotals()
+ *          → updateChildCareSubsidyOutputs()  → computeChildCareSubsidyMonthly
+ *          → updateEitcOutputs()              → computeEitcMonthlyFromMonthlyEarned
+ *          → updateMarketplaceOutputs()       → computeMarketplaceSubsidyMonthlyL
+ *          → updateMedicaidOutputs()          → computeMedicaidMonthlyN
+ *          → updateHcvOutputs()               → computeHcvProgramMonthlyQ
+ *          → updateSnapOutputs()              → computeSnapV
+ *          → updateTanfOutputs()              → computeTanfMaxLT
+ *                └─ then re-runs child care + HCV (they depend on TANF L/T)
+ *          → updateWicOutputs()               → computeWicMonthlyF (+ TANF max)
+ *          → updateAggregateOutputs()         → sum benefits + earned → resources + charts
+ *
+ * “Current” vs “New” scenarios differ mainly by parent-yes / parent-no earned
+ * income. Most programs use ceil(parentYes) + ceil(parentNo); aggregates use
+ * exact (non-ceil) earned for resource totals. TANF (and TANF embedded in SNAP /
+ * WIC) follows the workbook and uses *current* earned for both columns.
+ *
+ * Excel “TIP” in comments = Total income package sheet cell refs.
+ */
 (function () {
   "use strict";
 
@@ -9,6 +38,11 @@
   /** True after the user explicitly picks a tax filing status radio. */
   let taxFilingStatusUserSet = false;
 
+  // ---------------------------------------------------------------------------
+  // Output element IDs and chart segment definitions
+  // ---------------------------------------------------------------------------
+
+  /** Per-program Current-column output element IDs (order matches New list). */
   const BENEFIT_OUTPUT_IDS_CURRENT = [
     "output-cc-subsidy-current",
     "output-eitc-current",
@@ -20,6 +54,7 @@
     "output-wic-current",
   ];
 
+  /** Per-program New-column output element IDs. */
   const BENEFIT_OUTPUT_IDS_NEW = [
     "output-cc-subsidy-new",
     "output-eitc-new",
@@ -31,7 +66,7 @@
     "output-wic-new",
   ];
 
-  /** Pie chart slices for overall resources (income + each program). */
+  /** Pie chart slices for overall resources (earned income + each selected program). */
   const RESOURCE_CHART_SEGMENTS = [
     { key: "income", label: "Earned income", color: "#0057a1", kind: "income" },
     {
@@ -92,6 +127,10 @@
     },
   ];
 
+  // ---------------------------------------------------------------------------
+  // DOM / parse helpers
+  // ---------------------------------------------------------------------------
+
   /** @param {string} id */
   function $(id) {
     const el = document.getElementById(id);
@@ -147,6 +186,10 @@
     panel.hidden = !visible;
   }
 
+  // ---------------------------------------------------------------------------
+  // Conditional UI panels (disability / SSI / parent SS)
+  // ---------------------------------------------------------------------------
+
   function updateChildSsiPanel() {
     setPanelVisible(
       "child-ssi-panel",
@@ -183,6 +226,10 @@
     setPanelVisible("parent-no-ss-panel", isRadioYes("parent_no_ss"));
   }
 
+  // ---------------------------------------------------------------------------
+  // Income / SSI / TANF linkage getters (form → calculator params)
+  // ---------------------------------------------------------------------------
+
   /** TIP D80 — SS of adults who are parents of the children. */
   function getParentYesSocialSecurityMonthly() {
     if (!isRadioYes("parent_yes_ss")) return 0;
@@ -206,7 +253,10 @@
     return getParentYesSocialSecurityMonthly() + getParentNoSocialSecurityMonthly();
   }
 
-  /** TANF-VIEW L/T for child care and HCV linkage (from calculated TANF paths). */
+  /**
+   * TANF-VIEW L/T for child care (gate H) and HCV (gross income).
+   * Uses current earned (workbook B90), matching how TANF itself is evaluated.
+   */
   function getTanfPathLTForLinkage() {
     if (typeof computeTanfViewRowLT !== "function") return { tanfL: 0, tanfT: 0 };
     const p = buildTanfParams(monthlyEarnedCurrentDollars());
@@ -482,6 +532,10 @@
     return tipD61;
   }
 
+  /**
+   * Package form fields into the object expected by computeTanfViewRowLT /
+   * computeTanfMaxLT. Used by TANF, SNAP (embedded TANF), WIC, and linkage helpers.
+   */
   function buildTanfParams(monthlyEarned) {
     const locality = $("locality").value;
     const a3 =
@@ -545,6 +599,10 @@
     return counts;
   }
 
+  /**
+   * Packaged earned for most program formulas (workbook ceil-then-sum of
+   * parent-yes + parent-no monthly amounts).
+   */
   function monthlyEarnedCurrentDollars() {
     const yc = parseNonNegativeNumber($("parent-yes-current").value);
     const nc = parseNonNegativeNumber($("parent-no-current").value);
@@ -767,6 +825,10 @@
     );
   }
 
+  /**
+   * Household summary rows: sum of selected program outputs + exact earned =
+   * overall resources. Also refreshes the Current/New pie charts.
+   */
   function updateAggregateOutputs() {
     const benefitsCur = sumBenefitOutputs(BENEFIT_OUTPUT_IDS_CURRENT);
     const benefitsNew = sumBenefitOutputs(BENEFIT_OUTPUT_IDS_NEW);
@@ -980,6 +1042,11 @@
     updateAggregateOutputs();
   }
 
+  /**
+   * Update packaged earned income display, then recompute every selected program.
+   * Order matters: TANF runs before WIC; TANF’s finally-block also refreshes
+   * child care and HCV because those read TANF L/T.
+   */
   function updateIncomeTotals() {
     const yc = parseNonNegativeNumber($("parent-yes-current").value);
     const yn = parseNonNegativeNumber($("parent-yes-new").value);
@@ -1006,6 +1073,11 @@
     updateAggregateOutputs();
   }
 
+  // ---------------------------------------------------------------------------
+  // Per-program output updaters (form → compute* → Current/New DOM cells)
+  // ---------------------------------------------------------------------------
+
+  /** Child Care Subsidy: rates×hours − copay; TANF L/T gates eligibility H. */
   function updateChildCareSubsidyOutputs() {
     try {
     const outCur = $("output-cc-subsidy-current");
@@ -1055,6 +1127,7 @@
     }
   }
 
+  /** EITC (+ VA): requires a tax filing status; shows annual credit ÷ 12. */
   function updateEitcOutputs() {
     try {
     const outCur = $("output-eitc-current");
@@ -1098,6 +1171,7 @@
     }
   }
 
+  /** Marketplace PTC: SLCSP − expected contribution; $0 if Medicaid-eligible. */
   function updateMarketplaceOutputs() {
     try {
     const outCur = $("output-marketplace-current");
@@ -1138,6 +1212,7 @@
     }
   }
 
+  /** Medicaid: adult + child spend values if under income limits (after disregard). */
   function updateMedicaidOutputs() {
     try {
     const outCur = $("output-medicaid-current");
@@ -1178,6 +1253,7 @@
     }
   }
 
+  /** HCV: payment standard − tenant share; requires bedroom count; includes TANF in gross. */
   function updateHcvOutputs() {
     try {
     const outCur = $("output-hcv-current");
@@ -1246,6 +1322,10 @@
     }
   }
 
+  /**
+   * SNAP allotment. Embeds TANF via buildTanfParams; TANF earned path stays on
+   * current dollars for both scenarios (workbook). Shelter/utility from form.
+   */
   function updateSnapOutputs() {
     try {
     const outCur = $("output-snap-current");
@@ -1271,6 +1351,7 @@
     const base = {
       snapSelected: true,
       householdSizeSnap: adults + children,
+      // Workbook: TANF B for SNAP uses current packaged earned even on the New row.
       monthlyEarnedTanfB: monthlyEarnedCurrentDollars(),
       monthlySS: getParentYesSocialSecurityMonthly(),
       countableUnearnedOther: getParentNoSocialSecurityMonthly(),
@@ -1280,7 +1361,7 @@
       elderlyAdultsSnapCount: getSnapElderlyAdultsCountFromForm(),
       snapDisabilityMemberCount: getSnapDisabilityMemberCountFromForm(),
       disabilitySupportIncomeSnap: getAllSsiMonthlyTotal(),
-      tanfAnnualForSnapC205: 99500,
+      tanfAnnualForSnapC205: 99500, // fixed probe income for min-allotment rule
       tanfCaretakerDisabledYesCount: tanfBase.tanfParentYesCount || 0,
       tanfParentYesCount: tanfBase.tanfParentYesCount || 0,
       tipD61: tanfBase.tipD61 || 0,
@@ -1301,6 +1382,10 @@
     }
   }
 
+  /**
+   * TANF MAX(L,T). Both Current and New use current earned (workbook B90).
+   * finally: refresh child care + HCV so their TANF linkage stays in sync.
+   */
   function updateTanfOutputs() {
     try {
     const outMaxCur = $("output-tanf-max-current");
@@ -1336,6 +1421,7 @@
     }
   }
 
+  /** WIC: income test includes TANF max; persons = infant–preschool age bands. */
   function updateWicOutputs() {
     try {
     const outCur = $("output-wic-current");
@@ -1389,6 +1475,7 @@
     }
   }
 
+  /** Full recalculation after any form input that can affect outputs. */
   function refreshCalculatorAfterInputChange() {
     updateDisabilityPanels();
     updateParentSsPanels();

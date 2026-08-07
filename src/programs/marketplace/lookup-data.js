@@ -1,4 +1,6 @@
 /**
+ * Marketplace lookups: monthly FPL, Medicaid thresholds (also used by Medicaid),
+ * and SLCSP adult premiums by locality/age. Used by marketplace + medicaid calculators.
  * Auto-generated from FY2026 workbook (Program specific data + SLCSP premiums).
  * Regenerate: node scripts/build-marketplaceLookupData.mjs
  */

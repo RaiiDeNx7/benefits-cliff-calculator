@@ -1,11 +1,16 @@
 /**
- * Health Insurance Marketplace subsidy (monthly), matching Excel
- * 'Health insurance subsidy '!L220 / L222.
+ * Health Insurance Marketplace subsidy (premium tax credit), monthly.
  *
- * L = IF(O="Yes", 0, MAX(0, K - J))
- * K = SUM(C4:C11) SLCSP adults — see marketplaceLookupData SLCSP_ADULT_PREMIUM_BY_LOCALITY_AND_AGE
- * J = B * (E + (B - I) * (F - E) / (H - I)) with E..I from % FPL (D = B / K2) and M/N brackets from K2
- * O = Medicaid!G212/G214 = IF(E_med < J2_medicaid, "Yes", "No") where E_med = MAX(0, B - H_disregard)
+ * Mirrors Excel 'Health insurance subsidy '!L220 / L222.
+ *
+ * What the formula does:
+ *   1. If the household would qualify for Medicaid (same J-limit test as the
+ *      Medicaid module), subsidy is $0 — Medicaid blocks Marketplace.
+ *   2. K = sum of Second Lowest Cost Silver Plan (SLCSP) premiums for each
+ *      adult age in the locality (up to 8 adults).
+ *   3. J = expected household contribution from income as a % of FPL, using
+ *      ACA contribution brackets (E/F rates and H/I income band edges).
+ *   4. L = max(0, K − J) — subsidy fills the gap between SLCSP and contribution.
  *
  * B220/B222 = 'Total income package'!B90 / B91 (monthly earned).
  * K2 = VLOOKUP(household size, Program specific A6:D13, 3) — MARKETPLACE_MONTHLY_FPL_BY_HOUSEHOLD
@@ -31,6 +36,7 @@
     return name;
   }
 
+  /** Monthly FPL for household size (denominator for % FPL). */
   function monthlyFplForHousehold(householdSize) {
     var hh = Math.max(1, Math.min(8, Math.floor(Number(householdSize)) || 1));
     var row = MARKETPLACE_MONTHLY_FPL_BY_HOUSEHOLD.find(function (r) {
@@ -48,6 +54,10 @@
     );
   }
 
+  /**
+   * Income-band edges (M/N) derived from monthly FPL K2.
+   * Used with eFromD/fFromD/hFromD/iFromD to interpolate the contribution rate.
+   */
   function mnFromK2(K2) {
     return {
       m2: 0,
@@ -65,6 +75,7 @@
     };
   }
 
+  /** Lower contribution rate E for % FPL band D = income / FPL. */
   function eFromD(D) {
     if (D > 3.99) return 0.085;
     if (D > 2.99) return 0.06;
@@ -73,6 +84,7 @@
     return 0;
   }
 
+  /** Upper contribution rate F for the same % FPL band. */
   function fFromD(D) {
     if (D > 3.99) return 0.085;
     if (D > 2.99) return 0.085;
@@ -82,6 +94,7 @@
     return 0;
   }
 
+  /** Upper income edge H of the active ACA bracket. */
   function hFromD(D, mn) {
     if (D > 3.99) return mn.n7;
     if (D > 2.99) return mn.n6;
@@ -92,6 +105,7 @@
     return 0;
   }
 
+  /** Lower income edge I of the active ACA bracket. */
   function iFromD(D, mn) {
     if (D > 3.99) return mn.n6;
     if (D > 2.99) return mn.n5;
@@ -102,6 +116,11 @@
     return 0;
   }
 
+  /**
+   * Expected monthly contribution J:
+   *   B * (E + (B − I) * (F − E) / (H − I))
+   * Linearly interpolates between rates E and F across the income band [I, H].
+   */
   function contributionJ(B, K2) {
     var mn = mnFromK2(K2);
     var D = K2 > 0 ? B / K2 : 0;
@@ -114,6 +133,10 @@
     return B * (E + ((B - I) * (F - E)) / denom);
   }
 
+  /**
+   * True when countable income (earned − disregard) is under the adult Medicaid
+   * limit — same gate that zeros Marketplace subsidy (O = "Yes" in Excel).
+   */
   function medicaidBlocksMarketplace(monthlyEarned, householdSize) {
     var med = medicaidThresholdRow(householdSize);
     var B = Number(monthlyEarned) || 0;
@@ -121,6 +144,7 @@
     return E < med.jLimitMedicaid;
   }
 
+  /** Sum SLCSP adult premiums for each positive age (Excel C4:C11). */
   function slcspAdultsSum(locality, adultAges) {
     var loc = resolveLocalityName(locality);
     var table =

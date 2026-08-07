@@ -1,4 +1,6 @@
 /**
+ * SNAP lookup tables (gross/net tests, max allotment, utilities/SUA, shelter cap L2).
+ * Used by src/programs/snap/calculator.js (computeSnapV).
  * Auto-generated from FY2026 workbook (Program specific data + SNAP!L2).
  * Regenerate: npm run build-snap-data
  */
