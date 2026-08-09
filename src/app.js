@@ -1697,14 +1697,6 @@
     return rows;
   }
 
-  function escapeHtml(value) {
-    return String(value == null ? "" : value)
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;")
-      .replace(/"/g, "&quot;");
-  }
-
   function exportBasenameForToday() {
     const d = new Date();
     const yyyy = d.getFullYear();
@@ -1725,7 +1717,98 @@
     }
   }
 
-  function buildExportPdfHtml(inputRows, summaryRows) {
+  /** jsPDF built-in fonts lack common Unicode dashes/quotes used in the UI. */
+  function pdfSafeText(value) {
+    return String(value == null ? "" : value)
+      .replace(/\u2014/g, "--")
+      .replace(/\u2013/g, "-")
+      .replace(/\u2212/g, "-")
+      .replace(/\u2018|\u2019/g, "'")
+      .replace(/\u201C|\u201D/g, '"');
+  }
+
+  function parseHexColor(hex) {
+    const raw = String(hex || "").replace("#", "");
+    if (raw.length !== 6) return { r: 92, g: 93, b: 95 };
+    return {
+      r: parseInt(raw.slice(0, 2), 16),
+      g: parseInt(raw.slice(2, 4), 16),
+      b: parseInt(raw.slice(4, 6), 16),
+    };
+  }
+
+  /** Draw a pie chart to a canvas and return a PNG data URL for jsPDF. */
+  function pieChartToDataUrl(segments, size) {
+    const canvas = document.createElement("canvas");
+    canvas.width = size;
+    canvas.height = size;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return null;
+
+    const cx = size / 2;
+    const cy = size / 2;
+    const radius = size * 0.4;
+    let total = 0;
+    for (let i = 0; i < segments.length; i++) total += segments[i].amount;
+
+    ctx.clearRect(0, 0, size, size);
+
+    if (total <= 0) {
+      ctx.beginPath();
+      ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+      ctx.fillStyle = "#e8e9e5";
+      ctx.fill();
+      ctx.strokeStyle = "#d8d9d4";
+      ctx.lineWidth = 1;
+      ctx.stroke();
+      return canvas.toDataURL("image/png");
+    }
+
+    if (segments.length === 1) {
+      const rgb = parseHexColor(segments[0].color);
+      ctx.beginPath();
+      ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+      ctx.fillStyle = "rgb(" + rgb.r + "," + rgb.g + "," + rgb.b + ")";
+      ctx.fill();
+      return canvas.toDataURL("image/png");
+    }
+
+    // Start at 12 o'clock, matching the on-screen SVG pies.
+    let angle = -Math.PI / 2;
+    for (let i = 0; i < segments.length; i++) {
+      const seg = segments[i];
+      const sweep = (seg.amount / total) * Math.PI * 2;
+      const end = i === segments.length - 1 ? -Math.PI / 2 + Math.PI * 2 : angle + sweep;
+      const rgb = parseHexColor(seg.color);
+      ctx.beginPath();
+      ctx.moveTo(cx, cy);
+      ctx.arc(cx, cy, radius, angle, end);
+      ctx.closePath();
+      ctx.fillStyle = "rgb(" + rgb.r + "," + rgb.g + "," + rgb.b + ")";
+      ctx.fill();
+      angle = end;
+    }
+
+    return canvas.toDataURL("image/png");
+  }
+
+  function getJsPdfConstructor() {
+    if (window.jspdf && typeof window.jspdf.jsPDF === "function") {
+      return window.jspdf.jsPDF;
+    }
+    if (typeof window.jsPDF === "function") return window.jsPDF;
+    return null;
+  }
+
+  function exportSummaryToPdf() {
+    const JsPDF = getJsPdfConstructor();
+    if (!JsPDF) {
+      window.alert("PDF export is unavailable. Please refresh the page and try again.");
+      return;
+    }
+
+    const inputRows = collectExportInputs();
+    const summaryRows = collectExportSummary();
     const totals = [];
     const programs = [];
     for (let i = 0; i < summaryRows.length; i++) {
@@ -1734,116 +1817,251 @@
       else programs.push(row);
     }
 
-    let inputsBody = "";
-    for (let i = 0; i < inputRows.length; i++) {
-      const value = inputRows[i][2];
-      inputsBody +=
-        "<tr><th scope=\"row\">" +
-        escapeHtml(inputRows[i][1]) +
-        "</th><td>" +
-        escapeHtml(value === "" ? "—" : value) +
-        "</td></tr>";
-    }
+    const doc = new JsPDF({ unit: "pt", format: "letter", orientation: "portrait" });
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
+    const marginX = 48;
+    const marginTop = 48;
+    const marginBottom = 48;
+    const contentWidth = pageWidth - marginX * 2;
+    const lineH = 12;
+    let y = marginTop;
 
-    let totalsBody = "";
+    const ensureSpace = function (needed) {
+      if (y + needed <= pageHeight - marginBottom) return;
+      doc.addPage();
+      y = marginTop;
+    };
+
+    const drawHairline = function (atY) {
+      doc.setDrawColor(232, 233, 229);
+      doc.setLineWidth(0.4);
+      doc.line(marginX, atY, marginX + contentWidth, atY);
+    };
+
+    const drawSectionTitle = function (title) {
+      ensureSpace(36);
+      y += 6;
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(11);
+      doc.setTextColor(0, 68, 128);
+      doc.text(String(title).toUpperCase(), marginX, y);
+      y += 6;
+      doc.setDrawColor(194, 195, 190);
+      doc.setLineWidth(0.7);
+      doc.line(marginX, y, marginX + contentWidth, y);
+      y += 16;
+    };
+
+    // Masthead
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(18);
+    doc.setTextColor(0, 87, 161);
+    doc.text("Benefits Cliff Calculator", marginX, y);
+    y += 18;
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(10);
+    doc.setTextColor(92, 93, 95);
+    doc.text("Export dated " + formatExportDateLabel(), marginX, y);
+    y += 12;
+    doc.setDrawColor(0, 87, 161);
+    doc.setLineWidth(2);
+    doc.line(marginX, y, marginX + contentWidth, y);
+    y += 20;
+
+    // Household inputs
+    drawSectionTitle("Household inputs");
+    doc.setFontSize(9);
+    for (let i = 0; i < inputRows.length; i++) {
+      const label = pdfSafeText(inputRows[i][1] || "");
+      const value = pdfSafeText(inputRows[i][2] === "" ? "--" : inputRows[i][2]);
+      const labelLines = doc.splitTextToSize(label, contentWidth * 0.4);
+      const valueLines = doc.splitTextToSize(value, contentWidth * 0.52);
+      const rowH = Math.max(labelLines.length, valueLines.length) * lineH;
+      ensureSpace(rowH + 10);
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(92, 93, 95);
+      doc.text(labelLines, marginX, y);
+      doc.setTextColor(28, 28, 26);
+      doc.text(valueLines, marginX + contentWidth * 0.44, y);
+      y += rowH + 6;
+      drawHairline(y);
+      y += 8;
+    }
+    y += 8;
+
+    // Monthly household totals
+    drawSectionTitle("Monthly household totals");
+    const colMetric = marginX;
+    const colCurrent = marginX + contentWidth * 0.52;
+    const colNew = marginX + contentWidth * 0.72;
+    const colChange = marginX + contentWidth;
+    ensureSpace(28);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(9);
+    doc.setTextColor(0, 68, 128);
+    doc.text("Metric", colMetric, y);
+    doc.text("Current", colCurrent, y, { align: "right" });
+    doc.text("New", colNew, y, { align: "right" });
+    doc.text("Change", colChange, y, { align: "right" });
+    y += 8;
+    doc.setDrawColor(194, 195, 190);
+    doc.setLineWidth(0.7);
+    doc.line(marginX, y, marginX + contentWidth, y);
+    y += 14;
+    doc.setFontSize(9);
     for (let i = 0; i < totals.length; i++) {
       const row = totals[i];
-      const highlight = row[1] === "Overall resources" ? " class=\"row-highlight\"" : "";
-      totalsBody +=
-        "<tr" +
-        highlight +
-        "><th scope=\"row\">" +
-        escapeHtml(row[1]) +
-        "</th><td class=\"num\">" +
-        escapeHtml(row[2]) +
-        "</td><td class=\"num\">" +
-        escapeHtml(row[3]) +
-        "</td><td class=\"num\">" +
-        escapeHtml(row[4]) +
-        "</td></tr>";
+      const highlight = row[1] === "Overall resources";
+      ensureSpace(20);
+      doc.setFont("helvetica", highlight ? "bold" : "normal");
+      doc.setTextColor(highlight ? 28 : 92, highlight ? 28 : 93, highlight ? 26 : 95);
+      doc.text(pdfSafeText(row[1]), colMetric, y);
+      doc.setTextColor(28, 28, 26);
+      doc.text(pdfSafeText(row[2]), colCurrent, y, { align: "right" });
+      doc.text(pdfSafeText(row[3]), colNew, y, { align: "right" });
+      doc.text(pdfSafeText(row[4]), colChange, y, { align: "right" });
+      y += 16;
     }
+    y += 10;
 
-    let programsBody = "";
+    // Overall resources breakdown (pie charts stacked vertically for clean spacing)
+    drawSectionTitle("Overall resources breakdown");
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(9);
+    doc.setTextColor(92, 93, 95);
+    const lede = doc.splitTextToSize(
+      "Share of overall resources from earned income and each selected program.",
+      contentWidth
+    );
+    ensureSpace(lede.length * lineH + 12);
+    doc.text(lede, marginX, y);
+    y += lede.length * lineH + 14;
+
+    const chartScenarios = [
+      { key: "current", title: "Current", accent: { r: 0, g: 87, b: 161 } },
+      { key: "new", title: "New", accent: { r: 92, g: 93, b: 95 } },
+    ];
+    const pieSizePx = 140;
+    const pieSizePt = 64;
+    const chartPad = 12;
+    const legendGap = 14;
+    const legendItemGap = 6;
+
+    for (let c = 0; c < chartScenarios.length; c++) {
+      const scenario = chartScenarios[c];
+      const segments = resourceChartSegmentsForScenario(scenario.key);
+      let total = 0;
+      for (let s = 0; s < segments.length; s++) total += segments[s].amount;
+
+      doc.setFontSize(8);
+      const legendX = marginX + chartPad + pieSizePt + legendGap;
+      const legendW = contentWidth - pieSizePt - chartPad * 2 - legendGap;
+      let legendH = 0;
+      const legendBlocks = [];
+
+      if (total <= 0) {
+        legendBlocks.push({
+          nameLines: ["No resources to display yet."],
+          value: "",
+          color: null,
+        });
+        legendH = lineH;
+      } else {
+        for (let s = 0; s < segments.length; s++) {
+          const seg = segments[s];
+          const pct = Math.round((seg.amount / total) * 1000) / 10;
+          const nameLines = doc.splitTextToSize(pdfSafeText(seg.label), legendW - 14);
+          const value = pdfSafeText(formatAggregateAmount(seg.amount) + " (" + pct + "%)");
+          const blockH = nameLines.length * 10 + 10 + legendItemGap;
+          legendBlocks.push({
+            nameLines: nameLines,
+            value: value,
+            color: parseHexColor(seg.color),
+            height: blockH,
+          });
+          legendH += blockH;
+        }
+        if (legendBlocks.length) legendH -= legendItemGap;
+      }
+
+      const innerH = Math.max(pieSizePt, legendH);
+      const boxH = chartPad + 16 + innerH + chartPad;
+      ensureSpace(boxH + 12);
+
+      const boxY = y;
+      doc.setDrawColor(220, 221, 216);
+      doc.setFillColor(252, 252, 251);
+      doc.roundedRect(marginX, boxY, contentWidth, boxH, 4, 4, "FD");
+
+      // Caption
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(9);
+      doc.setTextColor(scenario.accent.r, scenario.accent.g, scenario.accent.b);
+      doc.text(scenario.title.toUpperCase(), marginX + chartPad, boxY + chartPad + 8);
+
+      const contentTop = boxY + chartPad + 16;
+      const dataUrl = pieChartToDataUrl(segments, pieSizePx);
+      if (dataUrl) {
+        doc.addImage(dataUrl, "PNG", marginX + chartPad, contentTop, pieSizePt, pieSizePt);
+      }
+
+      let legendY = contentTop + 2;
+      if (total <= 0) {
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(8);
+        doc.setTextColor(92, 93, 95);
+        doc.text(legendBlocks[0].nameLines[0], legendX, legendY + 8);
+      } else {
+        for (let s = 0; s < legendBlocks.length; s++) {
+          const block = legendBlocks[s];
+          if (block.color) {
+            doc.setFillColor(block.color.r, block.color.g, block.color.b);
+            doc.rect(legendX, legendY + 1, 7, 7, "F");
+          }
+          doc.setFont("helvetica", "bold");
+          doc.setFontSize(8);
+          doc.setTextColor(28, 28, 26);
+          doc.text(block.nameLines, legendX + 12, legendY + 7);
+          doc.setFont("helvetica", "normal");
+          doc.setTextColor(92, 93, 95);
+          doc.text(block.value, legendX + 12, legendY + 7 + block.nameLines.length * 10);
+          legendY += block.height;
+        }
+      }
+
+      y = boxY + boxH + 12;
+    }
+    y += 6;
+
+    // Benefits by program
+    drawSectionTitle("Benefits by program");
+    ensureSpace(28);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(9);
+    doc.setTextColor(0, 68, 128);
+    doc.text("Program", colMetric, y);
+    doc.text("Current", colCurrent, y, { align: "right" });
+    doc.text("New", colNew, y, { align: "right" });
+    y += 8;
+    doc.setDrawColor(194, 195, 190);
+    doc.setLineWidth(0.7);
+    doc.line(marginX, y, marginX + contentWidth, y);
+    y += 14;
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(9);
     for (let i = 0; i < programs.length; i++) {
       const row = programs[i];
-      programsBody +=
-        "<tr><th scope=\"row\">" +
-        escapeHtml(row[1]) +
-        "</th><td class=\"num\">" +
-        escapeHtml(row[2]) +
-        "</td><td class=\"num\">" +
-        escapeHtml(row[3]) +
-        "</td></tr>";
+      ensureSpace(18);
+      doc.setTextColor(92, 93, 95);
+      doc.text(pdfSafeText(row[1]), colMetric, y);
+      doc.setTextColor(28, 28, 26);
+      doc.text(pdfSafeText(row[2]), colCurrent, y, { align: "right" });
+      doc.text(pdfSafeText(row[3]), colNew, y, { align: "right" });
+      y += 15;
     }
 
-    const title = exportBasenameForToday();
-    return (
-      "<!DOCTYPE html><html lang=\"en\"><head><meta charset=\"UTF-8\" />" +
-      "<title>" +
-      escapeHtml(title) +
-      "</title><style>" +
-      "*,*::before,*::after{box-sizing:border-box}" +
-      "body{margin:0;padding:32px;font-family:'Segoe UI',system-ui,-apple-system,Arial,sans-serif;" +
-      "color:#1c1c1a;background:#fff;line-height:1.45;font-size:12.5px}" +
-      ".report{max-width:760px;margin:0 auto}" +
-      ".masthead{border-bottom:3px solid #0057a1;padding-bottom:16px;margin-bottom:28px}" +
-      ".masthead h1{margin:0 0 6px;font-size:22px;font-weight:650;letter-spacing:-0.02em;color:#0057a1}" +
-      ".masthead p{margin:0;color:#5c5d5f;font-size:12px}" +
-      "h2{margin:0 0 12px;font-size:14px;font-weight:650;letter-spacing:0.02em;" +
-      "text-transform:uppercase;color:#004480}" +
-      "section{margin-bottom:28px}" +
-      "table{width:100%;border-collapse:collapse}" +
-      "th,td{padding:8px 10px;border-bottom:1px solid #e8e9e5;text-align:left;vertical-align:top}" +
-      "thead th{background:#eef5fb;color:#004480;font-weight:600;border-bottom:1px solid #c2c3be}" +
-      "tbody th{font-weight:500;color:#5c5d5f;width:42%}" +
-      "td{font-variant-numeric:tabular-nums}" +
-      ".row-highlight th,.row-highlight td{background:#f3f7fb;font-weight:600;color:#1c1c1a}" +
-      ".num{text-align:right;white-space:nowrap}" +
-      "@media print{body{padding:0} section{break-inside:avoid}}" +
-      "</style></head><body><div class=\"report\">" +
-      "<header class=\"masthead\">" +
-      "<h1>Benefits Cliff Calculator</h1>" +
-      "<p>Export dated " +
-      escapeHtml(formatExportDateLabel()) +
-      "</p></header>" +
-      "<section><h2>Household inputs</h2>" +
-      "<table><thead><tr><th scope=\"col\">Field</th><th scope=\"col\">Value</th></tr></thead>" +
-      "<tbody>" +
-      inputsBody +
-      "</tbody></table></section>" +
-      "<section><h2>Monthly household totals</h2>" +
-      "<table><thead><tr><th scope=\"col\">Metric</th>" +
-      "<th class=\"num\" scope=\"col\">Current</th>" +
-      "<th class=\"num\" scope=\"col\">New</th>" +
-      "<th class=\"num\" scope=\"col\">Change</th></tr></thead>" +
-      "<tbody>" +
-      totalsBody +
-      "</tbody></table></section>" +
-      "<section><h2>Benefits by program</h2>" +
-      "<table><thead><tr><th scope=\"col\">Program</th>" +
-      "<th class=\"num\" scope=\"col\">Current</th>" +
-      "<th class=\"num\" scope=\"col\">New</th></tr></thead>" +
-      "<tbody>" +
-      programsBody +
-      "</tbody></table></section>" +
-      "</div></body></html>"
-    );
-  }
-
-  function exportSummaryToPdf() {
-    const html = buildExportPdfHtml(collectExportInputs(), collectExportSummary());
-    const reportWindow = window.open("", "_blank");
-    if (!reportWindow) {
-      window.alert("Please allow pop-ups to export the PDF report.");
-      return;
-    }
-    reportWindow.document.open();
-    reportWindow.document.write(html);
-    reportWindow.document.close();
-    reportWindow.focus();
-    setTimeout(function () {
-      reportWindow.print();
-    }, 250);
+    doc.save(exportBasenameForToday() + ".pdf");
   }
 
   function bindFormListeners() {
