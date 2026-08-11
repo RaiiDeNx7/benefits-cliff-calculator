@@ -14,12 +14,87 @@
             <h1>Benefits Cliff Calculator</h1>
             <p class="lede">Enter household information. Totals update as you type.</p>
           </div>
-          <button type="button" id="reset-form" class="btn-reset">Reset all inputs</button>
+          <div class="page-header-actions">
+            <button
+              type="button"
+              id="toggle-wage-calculator"
+              class="btn-reset"
+              aria-expanded="false"
+              aria-controls="wage-calculator"
+            >
+              Wage Calculator
+            </button>
+            <button type="button" id="reset-form" class="btn-reset">Reset all inputs</button>
+          </div>
         </div>
       </div>
     </header>
 
     <main class="layout">
+      <section
+        id="wage-calculator"
+        class="form-card wage-calculator is-hidden"
+        hidden
+        aria-labelledby="wage-calculator-title"
+      >
+        <div class="wage-calculator__header">
+          <h2 id="wage-calculator-title" class="wage-calculator__title">Wage Calculator</h2>
+          <p class="hint wage-calculator__lede">
+            Convert an hourly wage and hours per week into weekly, monthly, and annual pay. Monthly
+            uses hours × wage × 52 ÷ 12.
+          </p>
+        </div>
+        <div class="field-row field-row--two">
+          <div class="field">
+            <label for="wage-hourly">Hourly wage ($)</label>
+            <input
+              type="number"
+              id="wage-hourly"
+              name="wage_hourly"
+              min="0"
+              step="0.01"
+              inputmode="decimal"
+              placeholder="0"
+            />
+          </div>
+          <div class="field">
+            <label for="wage-hours-week">Hours per week</label>
+            <input
+              type="number"
+              id="wage-hours-week"
+              name="wage_hours_week"
+              min="0"
+              max="168"
+              step="0.25"
+              inputmode="decimal"
+              placeholder="40"
+            />
+          </div>
+        </div>
+        <div class="wage-calculator__results" role="status" aria-live="polite">
+          <div class="wage-calculator__result">
+            <span class="wage-calculator__result-label">Weekly</span>
+            <span class="wage-calculator__result-value" id="wage-weekly">—</span>
+          </div>
+          <div class="wage-calculator__result wage-calculator__result--emphasis">
+            <span class="wage-calculator__result-label">Monthly</span>
+            <span class="wage-calculator__result-value" id="wage-monthly">—</span>
+          </div>
+          <div class="wage-calculator__result">
+            <span class="wage-calculator__result-label">Annual</span>
+            <span class="wage-calculator__result-value" id="wage-annual">—</span>
+          </div>
+        </div>
+        <div class="wage-calculator__actions">
+          <button type="button" id="wage-apply-current" class="btn-secondary" disabled>
+            Use monthly as Current parent income
+          </button>
+          <button type="button" id="wage-apply-new" class="btn-secondary" disabled>
+            Use monthly as New parent income
+          </button>
+        </div>
+      </section>
+
       <form id="calculator-form" class="form-card" novalidate>
         <fieldset class="section">
           <legend>1. Locality</legend>

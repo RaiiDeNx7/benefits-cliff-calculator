@@ -1493,6 +1493,117 @@
     refreshCalculatorAfterInputChange();
   }
 
+  // ---------------------------------------------------------------------------
+  // Wage calculator (hourly × hours/week → weekly / monthly / annual)
+  // ---------------------------------------------------------------------------
+
+  /** @type {number|null} */
+  let wageMonthlyAmount = null;
+
+  function formatWageCurrency(amount) {
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(amount);
+  }
+
+  function updateWageCalculatorOutputs() {
+    const hourlyEl = document.getElementById("wage-hourly");
+    const hoursEl = document.getElementById("wage-hours-week");
+    const weeklyEl = document.getElementById("wage-weekly");
+    const monthlyEl = document.getElementById("wage-monthly");
+    const annualEl = document.getElementById("wage-annual");
+    const applyCurrent = document.getElementById("wage-apply-current");
+    const applyNew = document.getElementById("wage-apply-new");
+    if (!hourlyEl || !hoursEl || !weeklyEl || !monthlyEl || !annualEl) return;
+
+    const hourlyRaw = String(hourlyEl.value).trim();
+    const hoursRaw = String(hoursEl.value).trim();
+    const hasInput = Boolean(hourlyRaw || hoursRaw);
+
+    if (!hasInput) {
+      wageMonthlyAmount = null;
+      weeklyEl.textContent = "—";
+      monthlyEl.textContent = "—";
+      annualEl.textContent = "—";
+      if (applyCurrent instanceof HTMLButtonElement) applyCurrent.disabled = true;
+      if (applyNew instanceof HTMLButtonElement) applyNew.disabled = true;
+      return;
+    }
+
+    const hourly = parseNonNegativeNumber(hourlyRaw || "0");
+    const hours = parseNonNegativeNumber(hoursRaw || "0");
+    const weekly = hourly * hours;
+    const annual = weekly * 52;
+    const monthly = annual / 12;
+    wageMonthlyAmount = monthly;
+
+    weeklyEl.textContent = formatWageCurrency(weekly);
+    monthlyEl.textContent = formatWageCurrency(monthly);
+    annualEl.textContent = formatWageCurrency(annual);
+
+    const canApply = monthly > 0;
+    if (applyCurrent instanceof HTMLButtonElement) applyCurrent.disabled = !canApply;
+    if (applyNew instanceof HTMLButtonElement) applyNew.disabled = !canApply;
+  }
+
+  function applyWageMonthlyToParentField(fieldId) {
+    if (wageMonthlyAmount == null || !(wageMonthlyAmount > 0)) return;
+    const el = document.getElementById(fieldId);
+    if (!(el instanceof HTMLInputElement)) return;
+    el.value = String(Math.round(wageMonthlyAmount * 100) / 100);
+    updateIncomeTotals();
+  }
+
+  function setWageCalculatorVisible(visible) {
+    setPanelVisible("wage-calculator", visible);
+    const toggleBtn = document.getElementById("toggle-wage-calculator");
+    if (toggleBtn instanceof HTMLButtonElement) {
+      toggleBtn.setAttribute("aria-expanded", visible ? "true" : "false");
+    }
+    if (visible) {
+      const hourlyEl = document.getElementById("wage-hourly");
+      if (hourlyEl instanceof HTMLInputElement) hourlyEl.focus();
+    }
+  }
+
+  function toggleWageCalculator() {
+    const panel = document.getElementById("wage-calculator");
+    if (!panel) return;
+    setWageCalculatorVisible(panel.hidden || panel.classList.contains("is-hidden"));
+  }
+
+  function bindWageCalculator() {
+    const toggleBtn = document.getElementById("toggle-wage-calculator");
+    if (toggleBtn) {
+      toggleBtn.addEventListener("click", toggleWageCalculator);
+    }
+
+    ["wage-hourly", "wage-hours-week"].forEach(function (id) {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.addEventListener("input", updateWageCalculatorOutputs);
+      el.addEventListener("change", updateWageCalculatorOutputs);
+    });
+
+    const applyCurrent = document.getElementById("wage-apply-current");
+    if (applyCurrent) {
+      applyCurrent.addEventListener("click", function () {
+        applyWageMonthlyToParentField("parent-yes-current");
+      });
+    }
+    const applyNew = document.getElementById("wage-apply-new");
+    if (applyNew) {
+      applyNew.addEventListener("click", function () {
+        applyWageMonthlyToParentField("parent-yes-new");
+      });
+    }
+
+    updateWageCalculatorOutputs();
+  }
+
   function getSelectedRadioValue(name) {
     const el = document.querySelector('input[name="' + name + '"]:checked');
     return el instanceof HTMLInputElement ? el.value : "";
@@ -2069,6 +2180,8 @@
     if (resetBtn) {
       resetBtn.addEventListener("click", resetFormToDefaults);
     }
+
+    bindWageCalculator();
 
     const exportBtn = document.getElementById("export-summary");
     if (exportBtn) {

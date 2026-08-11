@@ -168,6 +168,22 @@ body {
 
 
 
+.page-header-actions {
+
+  display: flex;
+
+  flex-wrap: wrap;
+
+  align-items: center;
+
+  gap: 0.5rem;
+
+  flex-shrink: 0;
+
+}
+
+
+
 .btn-reset {
 
   flex-shrink: 0;
@@ -209,6 +225,200 @@ body {
   outline: 2px solid #ffffff;
 
   outline-offset: 2px;
+
+}
+
+
+
+.btn-reset[aria-expanded="true"] {
+
+  background: rgba(255, 255, 255, 0.22);
+
+  border-color: rgba(255, 255, 255, 0.7);
+
+}
+
+
+
+.btn-secondary {
+
+  flex-shrink: 0;
+
+  padding: 0.5rem 0.875rem;
+
+  font-size: 0.8125rem;
+
+  font-weight: 500;
+
+  color: var(--text);
+
+  background: var(--bg);
+
+  border: 1px solid var(--border-strong);
+
+  border-radius: var(--radius-sm);
+
+  cursor: pointer;
+
+  transition: background 0.15s ease, border-color 0.15s ease;
+
+}
+
+
+
+.btn-secondary:hover:not(:disabled) {
+
+  background: #ffffff;
+
+  border-color: var(--vdss-blue);
+
+}
+
+
+
+.btn-secondary:focus-visible {
+
+  outline: 2px solid var(--vdss-blue);
+
+  outline-offset: 2px;
+
+}
+
+
+
+.btn-secondary:disabled {
+
+  opacity: 0.45;
+
+  cursor: not-allowed;
+
+}
+
+
+
+.wage-calculator__header {
+
+  margin-bottom: 1.25rem;
+
+}
+
+
+
+.wage-calculator__title {
+
+  margin: 0 0 0.35rem;
+
+  font-size: 1.125rem;
+
+  font-weight: 600;
+
+  letter-spacing: -0.02em;
+
+  color: var(--text);
+
+}
+
+
+
+.wage-calculator__lede {
+
+  margin: 0;
+
+}
+
+
+
+.wage-calculator__results {
+
+  display: grid;
+
+  gap: 0.75rem;
+
+  margin-top: 1.25rem;
+
+  padding: 1rem 1.125rem;
+
+  background: var(--bg);
+
+  border-radius: var(--radius-sm);
+
+  border: 1px solid var(--border);
+
+}
+
+
+
+@media (min-width: 560px) {
+
+  .wage-calculator__results {
+
+    grid-template-columns: repeat(3, 1fr);
+
+  }
+
+}
+
+
+
+.wage-calculator__result {
+
+  display: flex;
+
+  flex-direction: column;
+
+  gap: 0.25rem;
+
+}
+
+
+
+.wage-calculator__result-label {
+
+  font-size: 0.75rem;
+
+  font-weight: 600;
+
+  letter-spacing: 0.02em;
+
+  text-transform: uppercase;
+
+  color: var(--muted);
+
+}
+
+
+
+.wage-calculator__result-value {
+
+  font-size: 1.25rem;
+
+  font-weight: 600;
+
+  font-variant-numeric: tabular-nums;
+
+  color: var(--text);
+
+}
+
+
+
+.wage-calculator__result--emphasis .wage-calculator__result-value {
+
+  color: var(--vdss-blue);
+
+}
+
+
+
+.wage-calculator__actions {
+
+  display: flex;
+
+  flex-wrap: wrap;
+
+  gap: 0.5rem;
+
+  margin-top: 1rem;
 
 }
 
